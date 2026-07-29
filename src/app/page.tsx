@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,10 @@ async function getDashboardData() {
 }
 
 export default async function Home() {
-  const dashboard = await getDashboardData();
+  const [dashboard, user] = await Promise.all([
+    getDashboardData(),
+    requireUser(),
+  ]);
   const stats = [
     {
       label: "New leads",
@@ -163,6 +167,20 @@ export default async function Home() {
             </a>
           ))}
         </nav>
+        <div className="border-t border-white/10 p-4">
+          <div className="rounded-lg px-3 py-2">
+            <p className="truncate text-sm font-semibold">{user.name}</p>
+            <p className="truncate text-xs text-emerald-100/50">{user.email}</p>
+          </div>
+          <form action="/api/auth/logout" method="post">
+            <button
+              type="submit"
+              className="mt-2 w-full rounded-lg border border-white/15 px-3 py-2 text-left text-xs font-semibold text-emerald-50/70 hover:bg-white/8 hover:text-white"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
 
       <div className="lg:pl-64">

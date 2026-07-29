@@ -1,54 +1,26 @@
-import { timingSafeEqual } from "node:crypto";
-
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-function safeEqual(left: string, right: string) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session-token";
 
-  return (
-    leftBuffer.length === rightBuffer.length &&
-    timingSafeEqual(leftBuffer, rightBuffer)
+export async function proxy(request: NextRequest) {
+  const session = await verifySessionToken(
+    request.cookies.get(SESSION_COOKIE)?.value,
   );
-}
+  const isLoginPage = request.nextUrl.pathname === "/login";
 
-export function proxy(request: NextRequest) {
-  const expectedUsername = process.env.CRM_ADMIN_USERNAME;
-  const expectedPassword = process.env.CRM_ADMIN_PASSWORD;
-  const authorization = request.headers.get("authorization");
-
-  if (expectedUsername && expectedPassword && authorization?.startsWith("Basic ")) {
-    try {
-      const [username, password] = Buffer.from(
-        authorization.slice(6),
-        "base64",
-      )
-        .toString("utf8")
-        .split(":", 2);
-
-      if (
-        safeEqual(username ?? "", expectedUsername) &&
-        safeEqual(password ?? "", expectedPassword)
-      ) {
-        return NextResponse.next();
-      }
-    } catch {
-      // Invalid Basic authorization header.
-    }
+  if (isLoginPage && session) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Blend CRM", charset="UTF-8"',
-      "Cache-Control": "no-store",
-    },
-  });
+  if (!isLoginPage && !session) {
+    const loginUrl = new URL("/login", request.url);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/((?!api/health|api/v1/leads|_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/", "/login"],
 };

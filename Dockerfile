@@ -16,6 +16,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY prisma ./prisma
 COPY prisma.config.ts ./
+COPY src/lib/password.ts ./src/lib/password.ts
+COPY scripts ./scripts
+RUN npx prisma generate
 CMD ["npx", "prisma", "migrate", "deploy"]
 
 FROM node:24-alpine AS runner
