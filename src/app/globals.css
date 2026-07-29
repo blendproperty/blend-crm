@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f7f6;
+  --foreground: #17211d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+.dot-green { background: #20b886; box-shadow: 0 0 0 5px #e4f6f0; }
+.dot-orange { background: #e7a43f; box-shadow: 0 0 0 5px #fff4e2; }
+.dot-blue { background: #477fd1; box-shadow: 0 0 0 5px #e9f0fb; }
+.dot-purple { background: #8b66c6; box-shadow: 0 0 0 5px #f1ebf9; }
+
+.status-new { background: #e4f5ee; color: #137052; }
+.status-contacted { background: #e9f0fb; color: #3564a8; }
+.status-qualified { background: #fff2dc; color: #9a6110; }
+.status-viewing { background: #f0eafb; color: #6d49a4; }
