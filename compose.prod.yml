@@ -1,0 +1,42 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blend-crm-web:latest
+    container_name: blend-crm-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=root_default
+      - traefik.http.routers.blend-crm.rule=Host(`crm.onpointoffices.co.za`)
+      - traefik.http.routers.blend-crm.entrypoints=websecure
+      - traefik.http.routers.blend-crm.tls=true
+      - traefik.http.routers.blend-crm.tls.certresolver=mytlschallenge
+      - traefik.http.services.blend-crm.loadbalancer.server.port=3000
+    networks:
+      - default
+      - traefik
+
+networks:
+  traefik:
+    external: true
+    name: root_default
+
