@@ -12,8 +12,8 @@ async function main() {
     throw new Error("Database URL, administrator email, and password are required");
   }
 
-  if (password.length < 10) {
-    throw new Error("Administrator password must contain at least 10 characters");
+  if (password.length < 8) {
+    throw new Error("Administrator password must contain at least 8 characters");
   }
 
   const adapter = new PrismaPg({ connectionString });
