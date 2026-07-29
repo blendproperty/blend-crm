@@ -4,8 +4,17 @@ import { createSession } from "@/lib/session";
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
-    return Response.json({ error: "Invalid request origin" }, { status: 403 });
+  if (origin) {
+    const originUrl = new URL(origin);
+    const requestHost =
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const invalidHost = !requestHost || originUrl.host !== requestHost;
+    const invalidProtocol =
+      process.env.NODE_ENV === "production" && originUrl.protocol !== "https:";
+
+    if (invalidHost || invalidProtocol) {
+      return Response.json({ error: "Invalid request origin" }, { status: 403 });
+    }
   }
 
   const body = await request.json().catch(() => null);
