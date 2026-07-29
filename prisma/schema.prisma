@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  AGENT
+}
+
+enum LeadStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VIEWING
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum LeadPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  WHATSAPP
+  STATUS_CHANGE
+  ASSIGNMENT
+  VIEWING
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  role          UserRole   @default(AGENT)
+  active        Boolean    @default(true)
+  assignedLeads Lead[]     @relation("LeadAssignee")
+  activities    Activity[]
+  tasks         Task[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Website {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  domain    String?
+  active    Boolean  @default(true)
+  leads     Lead[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id              String   @id @default(cuid())
+  firstName       String
+  lastName        String?
+  email           String?
+  normalizedEmail String?  @unique
+  phone           String?
+  normalizedPhone String?  @unique
+  company         String?
+  leads           Lead[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([lastName, firstName])
+}
+
+model Property {
+  id        String   @id @default(cuid())
+  reference String   @unique
+  title     String
+  address   String?
+  active    Boolean  @default(true)
+  leads     Lead[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id               String       @id @default(cuid())
+  externalId       String?
+  stage            LeadStage    @default(NEW)
+  priority         LeadPriority @default(NORMAL)
+  message          String?
+  sourcePage       String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  firstRespondedAt DateTime?
+  closedAt         DateTime?
+  lostReason       String?
+  contactId        String
+  contact          Contact      @relation(fields: [contactId], references: [id])
+  websiteId        String
+  website          Website      @relation(fields: [websiteId], references: [id])
+  propertyId       String?
+  property         Property?    @relation(fields: [propertyId], references: [id])
+  assignedToId     String?
+  assignedTo       User?        @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  activities       Activity[]
+  tasks            Task[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([websiteId, externalId])
+  @@index([stage, createdAt])
+  @@index([assignedToId, stage])
+  @@index([contactId])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  content   String
+  leadId    String
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  dueAt       DateTime?
+  status      TaskStatus @default(OPEN)
+  leadId      String
+  lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?      @relation(fields: [assigneeId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([assigneeId, status, dueAt])
+  @@index([leadId])
+}

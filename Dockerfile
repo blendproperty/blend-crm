@@ -8,7 +8,15 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN npm run db:generate && npm run build
+
+FROM node:24-alpine AS migrator
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+CMD ["npx", "prisma", "migrate", "deploy"]
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -28,4 +36,3 @@ USER nextjs
 EXPOSE 3000
 
 CMD ["node", "server.js"]
-
