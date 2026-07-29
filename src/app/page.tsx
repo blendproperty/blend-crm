@@ -1,9 +1,18 @@
+import Link from "next/link";
+
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-const nav = ["Overview", "Leads", "Pipeline", "Properties", "Tasks", "Reports"];
+const nav = [
+  { label: "Overview", href: "/" },
+  { label: "Leads", href: "/leads" },
+  { label: "Pipeline", href: "/pipeline" },
+  { label: "Properties", href: "/properties" },
+  { label: "Tasks", href: "/tasks" },
+  { label: "Reports", href: "/reports" },
+];
 const sourceColors = ["#17956f", "#224997", "#e8a23c", "#8a94a3"];
 const pipelineStages = [
   "NEW",
@@ -146,9 +155,9 @@ export default async function Home() {
         </div>
         <nav className="flex-1 space-y-1 px-4 py-6">
           {nav.map((item, index) => (
-            <a
-              key={item}
-              href="#"
+            <Link
+              key={item.href}
+              href={item.href}
               className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ${
                 index === 0
                   ? "bg-white/12"
@@ -156,15 +165,15 @@ export default async function Home() {
               }`}
             >
               <span className="flex h-6 w-6 items-center justify-center rounded-md border border-current/30 text-[10px]">
-                {item[0]}
+                {item.label[0]}
               </span>
-              {item}
-              {item === "Leads" && (
+              {item.label}
+              {item.label === "Leads" && (
                 <span className="ml-auto rounded-full bg-[#2fd39b] px-2 py-0.5 text-[10px] font-bold text-[#102d23]">
                   {dashboard.newLeads}
                 </span>
               )}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="border-t border-white/10 p-4">
@@ -191,9 +200,9 @@ export default async function Home() {
             </p>
             <h1 className="mt-1 text-2xl font-bold">CRM Overview</h1>
           </div>
-          <span className="rounded-full bg-[#e4f5ee] px-3 py-1.5 text-xs font-bold text-[#137052]">
-            Live data
-          </span>
+          <Link href="/leads/new" className="rounded-lg bg-[#159a70] px-4 py-2.5 text-sm font-bold text-white">
+            + Add lead
+          </Link>
         </header>
 
         <main className="mx-auto max-w-[1500px] p-5 md:p-9">

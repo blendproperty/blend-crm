@@ -1,0 +1,103 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+
+const stages = ["NEW", "CONTACTED", "QUALIFIED", "VIEWING", "NEGOTIATION", "WON", "LOST"];
+const priorities = ["LOW", "NORMAL", "HIGH", "URGENT"];
+
+const label = (value: string) =>
+  value.charAt(0) + value.slice(1).toLowerCase();
+
+export function LeadControls({
+  leadId,
+  stage,
+  priority,
+}: {
+  leadId: string;
+  stage: string;
+  priority: string;
+}) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function update(values: { stage?: string; priority?: string }) {
+    setSaving(true);
+    setError("");
+    const response = await fetch(`/api/leads/${leadId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? "Unable to update the lead");
+    } else {
+      router.refresh();
+    }
+    setSaving(false);
+  }
+
+  async function addNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const response = await fetch(`/api/leads/${leadId}/activities`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: data.get("content") }),
+    });
+    if (response.ok) {
+      form.reset();
+      router.refresh();
+    } else {
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? "Unable to save the note");
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="text-xs font-bold uppercase tracking-[0.1em] text-[#6e7c76]">
+          Stage
+          <select
+            value={stage}
+            disabled={saving}
+            onChange={(event) => update({ stage: event.target.value })}
+            className="mt-2 h-11 w-full rounded-lg border border-[#dce4e0] bg-white px-3 text-sm font-medium"
+          >
+            {stages.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+          </select>
+        </label>
+        <label className="text-xs font-bold uppercase tracking-[0.1em] text-[#6e7c76]">
+          Priority
+          <select
+            value={priority}
+            disabled={saving}
+            onChange={(event) => update({ priority: event.target.value })}
+            className="mt-2 h-11 w-full rounded-lg border border-[#dce4e0] bg-white px-3 text-sm font-medium"
+          >
+            {priorities.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+          </select>
+        </label>
+      </div>
+      <form onSubmit={addNote}>
+        <textarea
+          name="content"
+          required
+          placeholder="Add a note about this lead..."
+          className="min-h-28 w-full rounded-lg border border-[#dce4e0] px-4 py-3 text-sm outline-none focus:border-[#159a70]"
+        />
+        <button disabled={saving} className="mt-2 rounded-lg bg-[#159a70] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          {saving ? "Saving..." : "Add note"}
+        </button>
+      </form>
+      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+    </div>
+  );
+}

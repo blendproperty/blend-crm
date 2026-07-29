@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { db } from "@/lib/db";
 import {
@@ -28,19 +29,22 @@ export async function deleteSession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function requireUser() {
+export const getCurrentUser = cache(async () => {
   const cookieStore = await cookies();
   const session = await verifySessionToken(
     cookieStore.get(SESSION_COOKIE)?.value,
   );
 
-  if (!session) redirect("/login");
+  if (!session) return null;
 
-  const user = await db.user.findFirst({
+  return db.user.findFirst({
     where: { id: session.userId, active: true },
     select: { id: true, name: true, email: true, role: true },
   });
+});
 
+export async function requireUser() {
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
   return user;
 }
