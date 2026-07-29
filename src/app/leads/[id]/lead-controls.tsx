@@ -13,16 +13,24 @@ export function LeadControls({
   leadId,
   stage,
   priority,
+  assignedToId,
+  users,
 }: {
   leadId: string;
   stage: string;
   priority: string;
+  assignedToId: string | null;
+  users: Array<{ id: string; name: string }>;
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function update(values: { stage?: string; priority?: string }) {
+  async function update(values: {
+    stage?: string;
+    priority?: string;
+    assignedToId?: string | null;
+  }) {
     setSaving(true);
     setError("");
     const response = await fetch(`/api/leads/${leadId}`, {
@@ -86,6 +94,24 @@ export function LeadControls({
           </select>
         </label>
       </div>
+      <label className="block text-xs font-bold uppercase tracking-[0.1em] text-[#6e7c76]">
+        Assigned to
+        <select
+          value={assignedToId ?? ""}
+          disabled={saving}
+          onChange={(event) =>
+            update({ assignedToId: event.target.value || null })
+          }
+          className="mt-2 h-11 w-full rounded-lg border border-[#dce4e0] bg-white px-3 text-sm font-medium"
+        >
+          <option value="">Unassigned</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <form onSubmit={addNote}>
         <textarea
           name="content"

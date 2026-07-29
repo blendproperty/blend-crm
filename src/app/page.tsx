@@ -12,6 +12,7 @@ const nav = [
   { label: "Properties", href: "/properties" },
   { label: "Tasks", href: "/tasks" },
   { label: "Reports", href: "/reports" },
+  { label: "Team", href: "/users" },
 ];
 const sourceColors = ["#17956f", "#224997", "#e8a23c", "#8a94a3"];
 const pipelineStages = [

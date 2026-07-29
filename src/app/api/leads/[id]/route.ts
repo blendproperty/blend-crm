@@ -8,6 +8,7 @@ const schema = z.object({
     .enum(["NEW", "CONTACTED", "QUALIFIED", "VIEWING", "NEGOTIATION", "WON", "LOST"])
     .optional(),
   priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
+  assignedToId: z.string().min(1).nullable().optional(),
 });
 
 export async function PATCH(
@@ -18,14 +19,26 @@ export async function PATCH(
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success || (!parsed.data.stage && !parsed.data.priority)) {
+  if (
+    !parsed.success ||
+    (!parsed.data.stage &&
+      !parsed.data.priority &&
+      parsed.data.assignedToId === undefined)
+  ) {
     return Response.json({ error: "Invalid update" }, { status: 400 });
   }
 
   const { id } = await context.params;
   const existing = await db.lead.findUnique({
     where: { id },
-    select: { id: true, stage: true, priority: true, firstRespondedAt: true },
+    select: {
+      id: true,
+      stage: true,
+      priority: true,
+      firstRespondedAt: true,
+      assignedToId: true,
+      assignedTo: { select: { name: true } },
+    },
   });
   if (!existing) return Response.json({ error: "Lead not found" }, { status: 404 });
 
@@ -35,6 +48,25 @@ export async function PATCH(
   }
   if (parsed.data.priority && parsed.data.priority !== existing.priority) {
     changes.push(`Priority changed from ${existing.priority} to ${parsed.data.priority}`);
+  }
+  if (
+    parsed.data.assignedToId !== undefined &&
+    parsed.data.assignedToId !== existing.assignedToId
+  ) {
+    const assignee = parsed.data.assignedToId
+      ? await db.user.findFirst({
+          where: { id: parsed.data.assignedToId, active: true },
+          select: { name: true },
+        })
+      : null;
+    if (parsed.data.assignedToId && !assignee) {
+      return Response.json({ error: "Selected team member was not found" }, { status: 400 });
+    }
+    changes.push(
+      assignee
+        ? `Lead assigned to ${assignee.name}`
+        : `Lead unassigned from ${existing.assignedTo?.name ?? "team member"}`,
+    );
   }
 
   const now = new Date();
@@ -59,7 +91,10 @@ export async function PATCH(
     if (changes.length) {
       await transaction.activity.create({
         data: {
-          type: "STATUS_CHANGE",
+          type:
+            parsed.data.assignedToId !== undefined
+              ? "ASSIGNMENT"
+              : "STATUS_CHANGE",
           content: changes.join(". "),
           leadId: id,
           userId: user.id,
@@ -69,5 +104,10 @@ export async function PATCH(
     return updated;
   });
 
-  return Response.json({ id: lead.id, stage: lead.stage, priority: lead.priority });
+  return Response.json({
+    id: lead.id,
+    stage: lead.stage,
+    priority: lead.priority,
+    assignedToId: lead.assignedToId,
+  });
 }

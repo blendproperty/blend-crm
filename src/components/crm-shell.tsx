@@ -11,6 +11,7 @@ const navigation = [
   { label: "Properties", href: "/properties" },
   { label: "Tasks", href: "/tasks" },
   { label: "Reports", href: "/reports" },
+  { label: "Team", href: "/users" },
 ];
 
 export async function CrmShell({

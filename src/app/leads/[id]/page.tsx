@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LeadControls } from "@/app/leads/[id]/lead-controls";
+import { TaskControls } from "@/app/leads/[id]/task-controls";
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -21,20 +22,27 @@ export default async function LeadPage({
 }) {
   await requireUser();
   const { id } = await params;
-  const lead = await db.lead.findUnique({
-    where: { id },
-    include: {
-      contact: true,
-      website: true,
-      property: true,
-      assignedTo: true,
-      activities: {
-        include: { user: true },
-        orderBy: { createdAt: "desc" },
+  const [lead, users] = await Promise.all([
+    db.lead.findUnique({
+      where: { id },
+      include: {
+        contact: true,
+        website: true,
+        property: true,
+        assignedTo: true,
+        activities: {
+          include: { user: true },
+          orderBy: { createdAt: "desc" },
+        },
+        tasks: { orderBy: { createdAt: "desc" } },
       },
-      tasks: { orderBy: { createdAt: "desc" } },
-    },
-  });
+    }),
+    db.user.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
   if (!lead) notFound();
 
   const contactName =
@@ -81,18 +89,29 @@ export default async function LeadPage({
           <section className="rounded-xl border border-[#e2e8e5] bg-white p-6 shadow-sm">
             <h2 className="font-bold">Manage lead</h2>
             <div className="mt-5">
-              <LeadControls leadId={lead.id} stage={lead.stage} priority={lead.priority} />
+              <LeadControls
+                leadId={lead.id}
+                stage={lead.stage}
+                priority={lead.priority}
+                assignedToId={lead.assignedToId}
+                users={users}
+              />
             </div>
           </section>
           <section className="rounded-xl border border-[#e2e8e5] bg-white p-6 shadow-sm">
             <h2 className="font-bold">Tasks</h2>
-            {lead.tasks.length ? (
-              <div className="mt-4 space-y-3">
-                {lead.tasks.map((task) => <p key={task.id} className="text-sm">{task.title}</p>)}
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-[#74817b]">No tasks for this lead yet.</p>
-            )}
+            <div className="mt-4">
+              <TaskControls
+                leadId={lead.id}
+                users={users}
+                tasks={lead.tasks.map((task) => ({
+                  id: task.id,
+                  title: task.title,
+                  status: task.status,
+                  dueAt: task.dueAt?.toISOString() ?? null,
+                }))}
+              />
+            </div>
           </section>
         </aside>
       </div>
