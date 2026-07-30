@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f7f6;
-  --foreground: #17211d;
+  --background: #f4f6f5;
+  --foreground: #191919;
+  --blend-navy: #071839;
+  --blend-green: #229d6c;
+  --blend-acid: #c0ff72;
+  --blend-deep-green: #0d3827;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-figtree);
 }
 
 * {
@@ -19,6 +23,15 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-figtree), Arial, sans-serif;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 button,
