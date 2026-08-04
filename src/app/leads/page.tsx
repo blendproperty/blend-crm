@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LeadsTable } from "@/app/leads/leads-table";
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -93,51 +94,21 @@ export default async function LeadsPage({
         </button>
       </form>
 
-      <section className="mt-5 overflow-hidden rounded-xl border border-[#e2e8e5] bg-white shadow-sm">
-        <div className="hidden grid-cols-[1.4fr_1fr_1fr_0.8fr_0.7fr] gap-4 border-b border-[#edf0ef] bg-[#f8faf9] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#78857f] md:grid">
-          <span>Contact</span>
-          <span>Property</span>
-          <span>Source</span>
-          <span>Stage</span>
-          <span>Priority</span>
-        </div>
-        <div className="divide-y divide-[#edf0ef]">
-          {leads.map((lead) => (
-            <Link
-              key={lead.id}
-              href={`/leads/${lead.id}`}
-              className="grid gap-2 px-6 py-4 transition hover:bg-[#f8faf9] md:grid-cols-[1.4fr_1fr_1fr_0.8fr_0.7fr] md:items-center md:gap-4"
-            >
-              <div>
-                <p className="text-sm font-bold">
-                  {lead.contact.firstName} {lead.contact.lastName}
-                </p>
-                <p className="text-xs text-[#7a8781]">
-                  {lead.contact.email ?? lead.contact.phone ?? "No contact details"}
-                </p>
-              </div>
-              <p className="text-sm text-[#52615a]">
-                {lead.property?.title ?? "General enquiry"}
-              </p>
-              <p className="text-sm text-[#52615a]">{lead.website.name}</p>
-              <span className="w-fit rounded-full bg-[#e4f5ee] px-2.5 py-1 text-[11px] font-bold text-[#137052]">
-                {stageLabel(lead.stage)}
-              </span>
-              <span className="text-xs font-bold text-[#66746e]">
-                {stageLabel(lead.priority)}
-              </span>
-            </Link>
-          ))}
-          {leads.length === 0 && (
-            <div className="px-6 py-16 text-center">
-              <p className="font-bold">No leads found</p>
-              <p className="mt-1 text-sm text-[#74817b]">
-                Adjust the filters or add the first lead manually.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
+      <LeadsTable
+        leads={leads.map((lead) => ({
+          id: lead.id,
+          stage: lead.stage,
+          priority: lead.priority,
+          contact: {
+            firstName: lead.contact.firstName,
+            lastName: lead.contact.lastName,
+            email: lead.contact.email,
+            phone: lead.contact.phone,
+          },
+          property: lead.property ? { title: lead.property.title } : null,
+          website: { name: lead.website.name },
+        }))}
+      />
     </CrmShell>
   );
 }
