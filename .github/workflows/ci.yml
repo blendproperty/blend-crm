@@ -35,3 +35,22 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/blend-crm
+            git fetch origin main
+            git reset --hard origin/main
+            docker compose -f compose.prod.yml up -d --build
+            docker image prune -f
