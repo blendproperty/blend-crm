@@ -24,6 +24,7 @@ export function LeadControls({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   async function update(values: {
@@ -66,6 +67,24 @@ export function LeadControls({
       setError(body?.error ?? "Unable to save the note");
     }
     setSaving(false);
+  }
+
+  async function deleteLead() {
+    const confirmed = window.confirm(
+      "Delete this lead? This will also remove its activity log and tasks. This cannot be undone.",
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    setError("");
+    const response = await fetch(`/api/leads/${leadId}`, { method: "DELETE" });
+    if (response.ok) {
+      router.push("/leads");
+      router.refresh();
+    } else {
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? "Unable to delete the lead");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -124,6 +143,16 @@ export function LeadControls({
         </button>
       </form>
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      <div className="border-t border-[#edf0ef] pt-4">
+        <button
+          type="button"
+          onClick={deleteLead}
+          disabled={deleting}
+          className="w-full rounded-lg border border-red-200 px-5 py-2.5 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
+        >
+          {deleting ? "Deleting..." : "Delete lead"}
+        </button>
+      </div>
     </div>
   );
 }
