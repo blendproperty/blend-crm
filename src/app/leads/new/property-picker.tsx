@@ -28,12 +28,13 @@ export function PropertyPicker({
 
   useEffect(() => {
     const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      setResults([]);
-      return;
-    }
     const controller = new AbortController();
+
     const timeout = setTimeout(() => {
+      if (trimmed.length < 2) {
+        setResults([]);
+        return;
+      }
       fetch(`/api/properties?q=${encodeURIComponent(trimmed)}`, {
         signal: controller.signal,
       })
@@ -41,6 +42,7 @@ export function PropertyPicker({
         .then((body) => setResults(body.properties ?? []))
         .catch(() => {});
     }, 250);
+
     return () => {
       controller.abort();
       clearTimeout(timeout);
