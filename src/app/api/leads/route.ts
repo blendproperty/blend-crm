@@ -14,6 +14,7 @@ const schema = z
     email: z.string().trim().email().max(320).optional(),
     phone: optionalText(40),
     company: optionalText(160),
+    websiteId: optionalText(60),
     propertyReference: optionalText(120),
     propertyTitle: optionalText(240),
     message: optionalText(5000),
@@ -45,12 +46,24 @@ export async function POST(request: Request) {
   const normalizedEmail = normalizeEmail(input.email);
   const normalizedPhone = normalizePhone(input.phone);
 
-  const lead = await db.$transaction(async (transaction) => {
-    const website = await transaction.website.upsert({
-      where: { slug: "manual" },
-      update: { active: true },
-      create: { slug: "manual", name: "Manual entry" },
+  if (input.websiteId) {
+    const website = await db.website.findFirst({
+      where: { id: input.websiteId, active: true },
+      select: { id: true },
     });
+    if (!website) {
+      return Response.json({ error: "Selected source website was not found" }, { status: 400 });
+    }
+  }
+
+  const lead = await db.$transaction(async (transaction) => {
+    const website = input.websiteId
+      ? await transaction.website.findUniqueOrThrow({ where: { id: input.websiteId } })
+      : await transaction.website.upsert({
+          where: { slug: "manual" },
+          update: { active: true },
+          create: { slug: "manual", name: "Manual entry" },
+        });
 
     const contact = await transaction.contact.findFirst({
       where: {

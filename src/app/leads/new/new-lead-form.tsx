@@ -3,10 +3,15 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-export function NewLeadForm() {
+import { PropertyPicker } from "@/app/leads/new/property-picker";
+
+type WebsiteOption = { id: string; name: string };
+
+export function NewLeadForm({ websites }: { websites: WebsiteOption[] }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [property, setProperty] = useState({ reference: "", title: "" });
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -24,8 +29,9 @@ export function NewLeadForm() {
         email: value("email") || undefined,
         phone: value("phone") || undefined,
         company: value("company") || undefined,
-        propertyReference: value("propertyReference") || undefined,
-        propertyTitle: value("propertyTitle") || undefined,
+        websiteId: value("websiteId") || undefined,
+        propertyReference: property.reference || undefined,
+        propertyTitle: property.title || undefined,
         message: value("message") || undefined,
         priority: value("priority"),
       }),
@@ -60,14 +66,25 @@ export function NewLeadForm() {
       <section>
         <h2 className="font-bold">Enquiry</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <input className={inputClass} name="propertyReference" placeholder="Property reference" />
-          <input className={inputClass} name="propertyTitle" placeholder="Property title" />
+          <select className={`${inputClass} bg-white`} name="websiteId" defaultValue="">
+            <option value="">Source: Manual entry</option>
+            {websites.map((website) => (
+              <option key={website.id} value={website.id}>
+                Source: {website.name}
+              </option>
+            ))}
+          </select>
           <select className={`${inputClass} bg-white`} name="priority" defaultValue="NORMAL">
             <option value="LOW">Low priority</option>
             <option value="NORMAL">Normal priority</option>
             <option value="HIGH">High priority</option>
             <option value="URGENT">Urgent</option>
           </select>
+          <PropertyPicker
+            reference={property.reference}
+            title={property.title}
+            onChange={setProperty}
+          />
           <textarea
             className="min-h-32 rounded-lg border border-[#dce4e0] px-4 py-3 text-sm outline-none focus:border-[#159a70] md:col-span-2"
             name="message"
