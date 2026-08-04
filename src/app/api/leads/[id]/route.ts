@@ -111,3 +111,20 @@ export async function PATCH(
     assignedToId: lead.assignedToId,
   });
 }
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const user = await getCurrentUser();
+  if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await context.params;
+  const existing = await db.lead.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) return Response.json({ error: "Lead not found" }, { status: 404 });
+
+  // Activities and tasks cascade-delete with the lead (see prisma/schema.prisma).
+  await db.lead.delete({ where: { id } });
+
+  return Response.json({ ok: true });
+}
