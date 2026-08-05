@@ -15,7 +15,9 @@ export const leadIntakeSchema = z
       name: z.string().trim().min(2).max(120),
       domain: optionalText(255),
     }),
-    externalId: optionalText(160),
+    // External source identifiers are opaque and may be substantially longer
+    // than user-entered reference values (for example, Google Ads lead IDs).
+    externalId: optionalText(1000),
     contact: z.object({
       firstName: z.string().trim().min(1).max(100),
       lastName: optionalText(100),

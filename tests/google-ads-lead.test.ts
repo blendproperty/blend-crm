@@ -38,8 +38,10 @@ test("accepts long opaque Google Ads lead submission IDs", () => {
     ...payload,
     lead_id: longLeadId,
   });
+  const intake = googleAdsLeadToIntake(lead);
 
   assert.equal(lead.lead_id, longLeadId);
+  assert.equal(intake.externalId, longLeadId);
 });
 
 test("uses separate first and last name fields when supplied", () => {
