@@ -11,7 +11,8 @@ const navigation = [
   { label: "Properties", href: "/properties" },
   { label: "Tasks", href: "/tasks" },
   { label: "Reports", href: "/reports" },
-  { label: "Team", href: "/users" },
+  { label: "Team", href: "/users", adminOnly: true },
+  { label: "Settings", href: "/settings" },
 ];
 
 export async function CrmShell({
@@ -41,7 +42,7 @@ export async function CrmShell({
           </p>
         </div>
         <nav className="flex-1 space-y-1 px-4 py-6">
-          {navigation.map((item) => (
+          {navigation.filter((item) => !item.adminOnly || user.role === "ADMIN").map((item) => (
             <Link
               key={item.href}
               href={item.href}
