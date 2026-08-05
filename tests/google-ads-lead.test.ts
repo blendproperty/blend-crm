@@ -32,6 +32,16 @@ test("maps a Google lead into the CRM intake contract", () => {
   assert.equal(intake.utm?.campaign, "Midpoint Campaign");
 });
 
+test("accepts long opaque Google Ads lead submission IDs", () => {
+  const longLeadId = "a".repeat(512);
+  const lead = googleAdsLeadSchema.parse({
+    ...payload,
+    lead_id: longLeadId,
+  });
+
+  assert.equal(lead.lead_id, longLeadId);
+});
+
 test("uses separate first and last name fields when supplied", () => {
   const intake = googleAdsLeadToIntake(googleAdsLeadSchema.parse({
     ...payload,

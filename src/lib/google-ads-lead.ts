@@ -9,7 +9,8 @@ const googleAdsColumnSchema = z.object({
 });
 
 export const googleAdsLeadSchema = z.object({
-  lead_id: z.string().trim().min(1).max(160),
+  // Google Ads lead submission IDs are opaque and can exceed 160 characters.
+  lead_id: z.string().trim().min(1).max(1000),
   user_column_data: z.array(googleAdsColumnSchema).max(100).default([]),
   api_version: z.string().max(40).optional(),
   form_id: z.union([z.string(), z.number()]).optional(),
