@@ -4,9 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-function stageLabel(stage: string) {
-  return stage.charAt(0) + stage.slice(1).toLowerCase();
-}
+import { leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
 
 type LeadRow = {
   id: string;
@@ -26,6 +24,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [killing, setKilling] = useState(false);
   const [error, setError] = useState("");
 
   function toggle(id: string) {
@@ -88,6 +87,32 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
     setDeleting(false);
   }
 
+  async function killLeads(ids: string[]) {
+    if (ids.length === 0) return;
+    const reason = window.prompt(
+      `Why ${ids.length === 1 ? "is this lead" : `are these ${ids.length} leads`} being killed? They will remain recoverable.`,
+      "Not a valid property enquiry",
+    );
+    if (!reason?.trim()) return;
+
+    setKilling(true);
+    setError("");
+    const results = await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/leads/${id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ stage: "KILLED", killReason: reason.trim() }),
+        }),
+      ),
+    );
+    const failed = results.filter((response) => !response.ok).length;
+    if (failed) setError(`Unable to kill ${failed} lead${failed === 1 ? "" : "s"}.`);
+    setSelected(new Set());
+    setKilling(false);
+    router.refresh();
+  }
+
   return (
     <section className="mt-5 overflow-hidden rounded-xl border border-[#e2e8e5] bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0ef] bg-[#f8faf9] px-6 py-3">
@@ -96,7 +121,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
             type="checkbox"
             checked={leads.length > 0 && selected.size === leads.length}
             onChange={toggleAll}
-            disabled={leads.length === 0 || deleting}
+            disabled={leads.length === 0 || deleting || killing}
             className="h-4 w-4 rounded border-[#c9d4cf]"
           />
           Select all
@@ -105,8 +130,16 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
           {error && <p className="text-xs font-semibold text-red-700">{error}</p>}
           <button
             type="button"
+            onClick={() => void killLeads(Array.from(selected))}
+            disabled={selected.size === 0 || deleting || killing}
+            className="rounded-lg bg-slate-700 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {killing ? "Killing..." : `Kill selected${selected.size ? ` (${selected.size})` : ""}`}
+          </button>
+          <button
+            type="button"
             onClick={deleteSelected}
-            disabled={selected.size === 0 || deleting}
+            disabled={selected.size === 0 || deleting || killing}
             className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {deleting ? "Deleting..." : `Delete selected${selected.size ? ` (${selected.size})` : ""}`}
@@ -133,7 +166,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
               type="checkbox"
               checked={selected.has(lead.id)}
               onChange={() => toggle(lead.id)}
-              disabled={deleting}
+              disabled={deleting || killing}
               className="h-4 w-4 rounded border-[#c9d4cf]"
             />
             <Link href={`/leads/${lead.id}`} className="contents">
@@ -149,21 +182,19 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
                 {lead.property?.title ?? "General enquiry"}
               </p>
               <p className="hidden text-sm text-[#52615a] md:block">{lead.website.name}</p>
-              <span className="hidden w-fit rounded-full bg-[#e4f5ee] px-2.5 py-1 text-[11px] font-bold text-[#137052] md:inline-block">
-                {stageLabel(lead.stage)}
+              <span className={`hidden w-fit rounded-full border px-2.5 py-1 text-[11px] font-bold md:inline-block ${leadStageBadgeClass(lead.stage)}`}>
+                {leadStageLabel(lead.stage)}
               </span>
               <span className="hidden text-xs font-bold text-[#66746e] md:block">
-                {stageLabel(lead.priority)}
+                {leadStageLabel(lead.priority)}
               </span>
             </Link>
-            <button
-              type="button"
-              onClick={() => deleteOne(lead.id)}
-              disabled={deleting}
-              className="justify-self-end rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-40"
-            >
-              Delete
-            </button>
+            <div className="flex justify-self-end gap-2">
+              {lead.stage !== "KILLED" && (
+                <button type="button" onClick={() => void killLeads([lead.id])} disabled={deleting || killing} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Kill</button>
+              )}
+              <button type="button" onClick={() => deleteOne(lead.id)} disabled={deleting || killing} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-40">Delete</button>
+            </div>
           </div>
         ))}
         {leads.length === 0 && (

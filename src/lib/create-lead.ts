@@ -1,6 +1,7 @@
 import "server-only";
 
 import { db } from "@/lib/db";
+import { detectAutoKillReason } from "@/lib/auto-kill";
 import {
   type LeadIntake,
   normalizeEmail,
@@ -10,6 +11,7 @@ import {
 export async function createLeadFromIntake(input: LeadIntake) {
   const normalizedEmail = normalizeEmail(input.contact.email);
   const normalizedPhone = normalizePhone(input.contact.phone);
+  const autoKillReason = detectAutoKillReason(input);
 
   return db.$transaction(async (transaction) => {
     const website = await transaction.website.upsert({
@@ -100,11 +102,28 @@ export async function createLeadFromIntake(input: LeadIntake) {
         contactId: contact.id,
         websiteId: website.id,
         propertyId: property?.id,
+        ...(autoKillReason
+          ? {
+              stage: "KILLED" as const,
+              killedReason: autoKillReason,
+              killedAt: new Date(),
+              killedAutomatically: true,
+              closedAt: new Date(),
+            }
+          : {}),
         activities: {
-          create: {
-            type: "STATUS_CHANGE",
-            content: `Lead received from ${website.name}`,
-          },
+          create: [
+            {
+              type: "STATUS_CHANGE",
+              content: `Lead received from ${website.name}`,
+            },
+            ...(autoKillReason
+              ? [{
+                  type: "STATUS_CHANGE" as const,
+                  content: `Lead automatically killed: ${autoKillReason}`,
+                }]
+              : []),
+          ],
         },
       },
     });

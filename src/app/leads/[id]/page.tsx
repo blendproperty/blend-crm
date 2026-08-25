@@ -64,6 +64,16 @@ export default async function LeadPage({
               <div><p className="text-xs font-bold uppercase text-[#87938e]">Company</p><p className="mt-1">{lead.contact.company ?? "—"}</p></div>
               <div><p className="text-xs font-bold uppercase text-[#87938e]">Assigned to</p><p className="mt-1">{lead.assignedTo?.name ?? "Unassigned"}</p></div>
               <div className="sm:col-span-2"><p className="text-xs font-bold uppercase text-[#87938e]">Property</p><p className="mt-1">{lead.property ? `${lead.property.title} (${lead.property.reference})` : "General enquiry"}</p></div>
+              {lead.stage === "KILLED" && (
+                <div className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-bold uppercase text-slate-500">Killed lead</p>
+                  <p className="mt-1 font-semibold text-slate-800">{lead.killedReason ?? "No reason recorded"}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {lead.killedAutomatically ? "Auto-killed" : "Killed manually"}
+                    {lead.killedAt ? ` · ${formatDate(lead.killedAt)}` : ""}
+                  </p>
+                </div>
+              )}
               <div className="sm:col-span-2"><p className="text-xs font-bold uppercase text-[#87938e]">Original message</p><p className="mt-2 whitespace-pre-wrap leading-6 text-[#52615a]">{lead.message ?? "No message supplied."}</p></div>
             </div>
           </section>

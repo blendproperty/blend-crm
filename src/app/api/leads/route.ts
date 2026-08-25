@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { detectAutoKillReason } from "@/lib/auto-kill";
 import { normalizeEmail, normalizePhone } from "@/lib/lead-intake";
 import { getCurrentUser } from "@/lib/session";
 
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
   const input = parsed.data;
   const normalizedEmail = normalizeEmail(input.email);
   const normalizedPhone = normalizePhone(input.phone);
+  const autoKillReason = detectAutoKillReason({ message: input.message });
 
   if (input.websiteId) {
     const website = await db.website.findFirst({
@@ -118,12 +120,30 @@ export async function POST(request: Request) {
         websiteId: website.id,
         propertyId: property?.id,
         assignedToId: user.id,
+        ...(autoKillReason
+          ? {
+              stage: "KILLED" as const,
+              killedReason: autoKillReason,
+              killedAt: new Date(),
+              killedAutomatically: true,
+              closedAt: new Date(),
+            }
+          : {}),
         activities: {
-          create: {
-            type: "STATUS_CHANGE",
-            content: `Lead created manually by ${user.name}`,
-            userId: user.id,
-          },
+          create: [
+            {
+              type: "STATUS_CHANGE",
+              content: `Lead created manually by ${user.name}`,
+              userId: user.id,
+            },
+            ...(autoKillReason
+              ? [{
+                  type: "STATUS_CHANGE" as const,
+                  content: `Lead automatically killed: ${autoKillReason}`,
+                  userId: user.id,
+                }]
+              : []),
+          ],
         },
       },
     });

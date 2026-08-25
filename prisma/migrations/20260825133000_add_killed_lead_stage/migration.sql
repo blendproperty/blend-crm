@@ -1,0 +1,6 @@
+ALTER TYPE "LeadStage" ADD VALUE 'KILLED';
+
+ALTER TABLE "Lead"
+ADD COLUMN "killedReason" TEXT,
+ADD COLUMN "killedAt" TIMESTAMP(3),
+ADD COLUMN "killedAutomatically" BOOLEAN NOT NULL DEFAULT false;

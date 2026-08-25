@@ -3,7 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-const stages = ["NEW", "CONTACTED", "QUALIFIED", "VIEWING", "NEGOTIATION", "WON", "LOST"];
+import { leadStages, leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
+
 const priorities = ["LOW", "NORMAL", "HIGH", "URGENT"];
 
 const label = (value: string) =>
@@ -32,6 +33,7 @@ export function LeadControls({
     stage?: string;
     priority?: string;
     assignedToId?: string | null;
+    killReason?: string;
   }) {
     setSaving(true);
     setError("");
@@ -61,6 +63,18 @@ export function LeadControls({
       router.refresh();
     }
     setSaving(false);
+  }
+
+  function changeStage(nextStage: string) {
+    if (nextStage !== "KILLED") {
+      void update({ stage: nextStage });
+      return;
+    }
+    const reason = window.prompt(
+      "Why is this lead being killed? It will remain recoverable in Killed Leads.",
+      "Not a valid property enquiry",
+    );
+    if (reason?.trim()) void update({ stage: "KILLED", killReason: reason.trim() });
   }
 
   async function addNote(event: FormEvent<HTMLFormElement>) {
@@ -110,11 +124,14 @@ export function LeadControls({
           <select
             value={stage}
             disabled={saving}
-            onChange={(event) => update({ stage: event.target.value })}
+            onChange={(event) => changeStage(event.target.value)}
             className="mt-2 h-11 w-full rounded-lg border border-[#dce4e0] bg-white px-3 text-sm font-medium"
           >
-            {stages.map((item) => <option key={item} value={item}>{label(item)}</option>)}
+            {leadStages.map((item) => <option key={item} value={item}>{leadStageLabel(item)}</option>)}
           </select>
+          <span className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${leadStageBadgeClass(stage)}`}>
+            {leadStageLabel(stage)}
+          </span>
         </label>
         <label className="text-xs font-bold uppercase tracking-[0.1em] text-[#6e7c76]">
           Priority

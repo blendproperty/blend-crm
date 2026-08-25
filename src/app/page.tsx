@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import { leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
 import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -257,9 +258,8 @@ export default async function Home() {
                       <p className="hidden text-xs font-medium md:block">
                         {lead.website.name}
                       </p>
-                      <span className="hidden rounded-full bg-[#e4f5ee] px-2.5 py-1 text-[11px] font-bold text-[#137052] md:inline-block">
-                        {lead.stage.charAt(0) +
-                          lead.stage.slice(1).toLowerCase()}
+                      <span className={`hidden rounded-full border px-2.5 py-1 text-[11px] font-bold md:inline-block ${leadStageBadgeClass(lead.stage)}`}>
+                        {leadStageLabel(lead.stage)}
                       </span>
                       <p className="text-right text-[11px] text-[#8a958f]">
                         {relativeTime(lead.createdAt)}

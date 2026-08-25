@@ -21,6 +21,7 @@ enum LeadStage {
   NEGOTIATION
   WON
   LOST
+  KILLED
 }
 
 enum LeadPriority {
@@ -111,6 +112,9 @@ model Lead {
   firstRespondedAt DateTime?
   closedAt         DateTime?
   lostReason       String?
+  killedReason     String?
+  killedAt         DateTime?
+  killedAutomatically Boolean @default(false)
   contactId        String
   contact          Contact      @relation(fields: [contactId], references: [id])
   websiteId        String
