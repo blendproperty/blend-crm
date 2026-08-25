@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Lead assignment email
+
+When a lead is assigned to a different active CRM user, the CRM sends that user an email and records the delivery result in the lead activity log. Configure authenticated SMTP only in the production `.env`:
+
+```dotenv
+CRM_PUBLIC_URL=https://crm.onpointoffices.co.za
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=crm-notifications@example.com
+SMTP_PASSWORD=mailbox-password-or-app-password
+SMTP_FROM=Blend CRM <crm-notifications@example.com>
+```
+
+Use port `465` with `SMTP_SECURE=true` for implicit TLS. Use port `587` with `SMTP_SECURE=false` for STARTTLS. Do not commit the production SMTP password.

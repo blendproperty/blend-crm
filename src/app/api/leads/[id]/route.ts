@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { sendAssignmentEmail } from "@/lib/email";
 import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
@@ -43,6 +44,7 @@ export async function PATCH(
   if (!existing) return Response.json({ error: "Lead not found" }, { status: 404 });
 
   const changes: string[] = [];
+  let newAssignee: { name: string; email: string } | null = null;
   if (parsed.data.stage && parsed.data.stage !== existing.stage) {
     changes.push(`Stage changed from ${existing.stage} to ${parsed.data.stage}`);
   }
@@ -56,7 +58,7 @@ export async function PATCH(
     const assignee = parsed.data.assignedToId
       ? await db.user.findFirst({
           where: { id: parsed.data.assignedToId, active: true },
-          select: { name: true },
+          select: { name: true, email: true },
         })
       : null;
     if (parsed.data.assignedToId && !assignee) {
@@ -67,6 +69,7 @@ export async function PATCH(
         ? `Lead assigned to ${assignee.name}`
         : `Lead unassigned from ${existing.assignedTo?.name ?? "team member"}`,
     );
+    newAssignee = assignee;
   }
 
   const now = new Date();
@@ -104,11 +107,61 @@ export async function PATCH(
     return updated;
   });
 
+  let assignmentEmail: "not_applicable" | "sent" | "not_configured" | "failed" = "not_applicable";
+  if (newAssignee) {
+    try {
+      const emailLead = await db.lead.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          priority: true,
+          message: true,
+          contact: { select: { firstName: true, lastName: true, email: true, phone: true, company: true } },
+          property: { select: { title: true, reference: true } },
+        },
+      });
+      if (emailLead) {
+        const baseUrl = process.env.CRM_PUBLIC_URL?.replace(/\/$/, "") ?? "https://crm.onpointoffices.co.za";
+        const result = await sendAssignmentEmail({
+          to: newAssignee.email,
+          assigneeName: newAssignee.name,
+          assignedByName: user.name,
+          contactName: `${emailLead.contact.firstName} ${emailLead.contact.lastName ?? ""}`.trim(),
+          contactEmail: emailLead.contact.email,
+          contactPhone: emailLead.contact.phone,
+          company: emailLead.contact.company,
+          propertyName: emailLead.property ? `${emailLead.property.title} (${emailLead.property.reference})` : "General enquiry",
+          priority: emailLead.priority,
+          message: emailLead.message,
+          leadUrl: `${baseUrl}/leads/${emailLead.id}`,
+        });
+        assignmentEmail = result.status;
+        await db.activity.create({
+          data: {
+            type: "ASSIGNMENT",
+            content: result.status === "sent"
+              ? `Assignment email sent to ${newAssignee.name}`
+              : "Assignment email not sent because SMTP is not configured",
+            leadId: id,
+            userId: user.id,
+          },
+        });
+      }
+    } catch (error) {
+      assignmentEmail = "failed";
+      console.error("Assignment email delivery failed", error);
+      await db.activity.create({
+        data: { type: "ASSIGNMENT", content: `Assignment email to ${newAssignee.name} failed`, leadId: id, userId: user.id },
+      }).catch(() => undefined);
+    }
+  }
+
   return Response.json({
     id: lead.id,
     stage: lead.stage,
     priority: lead.priority,
     assignedToId: lead.assignedToId,
+    assignmentEmail,
   });
 }
 

@@ -26,6 +26,7 @@ export function LeadControls({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   async function update(values: {
     stage?: string;
@@ -34,15 +35,29 @@ export function LeadControls({
   }) {
     setSaving(true);
     setError("");
+    setNotice("");
     const response = await fetch(`/api/leads/${leadId}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(values),
     });
+    const body = await response.json().catch(() => null);
     if (!response.ok) {
-      const body = await response.json().catch(() => null);
       setError(body?.error ?? "Unable to update the lead");
     } else {
+      if (values.assignedToId) {
+        setNotice(
+          body?.assignmentEmail === "sent"
+            ? "Lead assigned and notification email sent."
+            : body?.assignmentEmail === "failed"
+              ? "Lead assigned, but the notification email failed. The failure was recorded in Activity."
+              : body?.assignmentEmail === "not_configured"
+                ? "Lead assigned, but assignment email is not configured yet."
+                : "Lead assigned.",
+        );
+      } else if (values.assignedToId === null) {
+        setNotice("Lead unassigned.");
+      }
       router.refresh();
     }
     setSaving(false);
@@ -143,6 +158,7 @@ export function LeadControls({
         </button>
       </form>
       {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {notice && <p role="status" className="rounded-lg bg-[#e9f7f1] px-4 py-3 text-sm font-medium text-[#137052]">{notice}</p>}
       <div className="border-t border-[#edf0ef] pt-4">
         <button
           type="button"

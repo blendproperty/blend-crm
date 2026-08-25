@@ -49,6 +49,13 @@ services:
       GOOGLE_ADS_WEBHOOK_TOKEN: ${GOOGLE_ADS_WEBHOOK_TOKEN:?GOOGLE_ADS_WEBHOOK_TOKEN is required}
       GOOGLE_ADS_WEBHOOK_KEY: ${GOOGLE_ADS_WEBHOOK_KEY:?GOOGLE_ADS_WEBHOOK_KEY is required}
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      CRM_PUBLIC_URL: ${CRM_PUBLIC_URL:-https://crm.onpointoffices.co.za}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       db:
         condition: service_healthy
