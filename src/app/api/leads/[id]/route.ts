@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { sendAssignmentEmail } from "@/lib/email";
-import { leadStages, leadStageLabel } from "@/lib/lead-stage";
+import { leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
 import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
@@ -43,11 +43,17 @@ export async function PATCH(
   });
   if (!existing) return Response.json({ error: "Lead not found" }, { status: 404 });
 
+  const targetStage = resolveLeadStageUpdate({
+    existingStage: existing.stage,
+    requestedStage: parsed.data.stage,
+    assignedToId: parsed.data.assignedToId,
+  });
+
   const changes: string[] = [];
   let newAssignee: { name: string; email: string } | null = null;
-  if (parsed.data.stage && parsed.data.stage !== existing.stage) {
-    changes.push(`Stage changed from ${leadStageLabel(existing.stage)} to ${leadStageLabel(parsed.data.stage)}`);
-    if (parsed.data.stage === "KILLED") {
+  if (targetStage && targetStage !== existing.stage) {
+    changes.push(`Stage changed from ${leadStageLabel(existing.stage)} to ${leadStageLabel(targetStage)}`);
+    if (targetStage === "KILLED") {
       changes.push(`Killed reason: ${parsed.data.killReason ?? "Manually killed"}`);
     }
   }
@@ -80,26 +86,27 @@ export async function PATCH(
     const updated = await transaction.lead.update({
       where: { id },
       data: {
-        stage: parsed.data.stage,
+        stage: targetStage,
         priority: parsed.data.priority,
         assignedToId: parsed.data.assignedToId,
-        ...(parsed.data.stage &&
-        parsed.data.stage !== "NEW" &&
+        ...(targetStage &&
+        targetStage !== "NEW" &&
+        targetStage !== "ASSIGNED" &&
         !existing.firstRespondedAt
           ? { firstRespondedAt: now }
           : {}),
-        ...(parsed.data.stage === "WON" || parsed.data.stage === "LOST" || parsed.data.stage === "KILLED"
+        ...(targetStage === "WON" || targetStage === "LOST" || targetStage === "KILLED"
           ? { closedAt: now }
-          : parsed.data.stage
+          : targetStage
             ? { closedAt: null }
             : {}),
-        ...(parsed.data.stage === "KILLED"
+        ...(targetStage === "KILLED"
           ? {
               killedReason: parsed.data.killReason ?? "Manually killed",
               killedAt: now,
               killedAutomatically: false,
             }
-          : parsed.data.stage
+          : targetStage
             ? { killedReason: null, killedAt: null, killedAutomatically: false }
             : {}),
       },

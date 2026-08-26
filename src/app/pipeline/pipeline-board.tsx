@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 const stages = [
   "NEW",
+  "ASSIGNED",
   "CONTACTED",
   "QUALIFIED",
   "VIEWING",
@@ -93,7 +94,7 @@ export function PipelineBoard({
         </div>
       </div>
 
-      <div className="grid gap-4 overflow-x-auto pb-4 xl:grid-cols-5">
+      <div className="grid gap-4 overflow-x-auto pb-4 xl:grid-cols-6">
         {stages.map((stage, stageIndex) => {
           const stageLeads = groupedLeads[stage];
           const isTarget = dropStage === stage;

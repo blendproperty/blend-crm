@@ -120,9 +120,9 @@ export async function POST(request: Request) {
         websiteId: website.id,
         propertyId: property?.id,
         assignedToId: user.id,
+        stage: autoKillReason ? "KILLED" : "ASSIGNED",
         ...(autoKillReason
           ? {
-              stage: "KILLED" as const,
               killedReason: autoKillReason,
               killedAt: new Date(),
               killedAutomatically: true,

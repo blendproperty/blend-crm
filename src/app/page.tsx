@@ -18,6 +18,7 @@ const nav = [
 const sourceColors = ["#17956f", "#224997", "#e8a23c", "#8a94a3"];
 const pipelineStages = [
   "NEW",
+  "ASSIGNED",
   "CONTACTED",
   "QUALIFIED",
   "VIEWING",

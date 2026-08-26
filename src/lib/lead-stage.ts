@@ -1,5 +1,6 @@
 export const leadStages = [
   "NEW",
+  "ASSIGNED",
   "CONTACTED",
   "QUALIFIED",
   "VIEWING",
@@ -18,6 +19,7 @@ export function leadStageLabel(stage: string) {
 export function leadStageBadgeClass(stage: string) {
   const classes: Record<string, string> = {
     NEW: "border-sky-200 bg-sky-50 text-sky-700",
+    ASSIGNED: "border-green-200 bg-green-100 text-green-800",
     CONTACTED: "border-blue-200 bg-blue-50 text-blue-700",
     QUALIFIED: "border-violet-200 bg-violet-50 text-violet-700",
     VIEWING: "border-amber-200 bg-amber-50 text-amber-800",
@@ -27,4 +29,15 @@ export function leadStageBadgeClass(stage: string) {
     KILLED: "border-slate-300 bg-slate-100 text-slate-700",
   };
   return classes[stage] ?? "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+export function resolveLeadStageUpdate(input: {
+  existingStage: LeadStageValue;
+  requestedStage?: LeadStageValue;
+  assignedToId?: string | null;
+}) {
+  if (input.requestedStage) return input.requestedStage;
+  if (input.assignedToId && input.existingStage === "NEW") return "ASSIGNED" as const;
+  if (input.assignedToId === null && input.existingStage === "ASSIGNED") return "NEW" as const;
+  return undefined;
 }

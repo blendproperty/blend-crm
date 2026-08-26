@@ -6,6 +6,7 @@ import { PipelineBoard, type PipelineLead } from "./pipeline-board";
 
 const stages = [
   "NEW",
+  "ASSIGNED",
   "CONTACTED",
   "QUALIFIED",
   "VIEWING",
