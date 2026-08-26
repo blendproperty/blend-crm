@@ -31,8 +31,24 @@ export function leadStageBadgeClass(stage: string) {
   return classes[stage] ?? "border-slate-200 bg-slate-50 text-slate-700";
 }
 
-export function hasRequiredKillNote(stage: LeadStageValue | undefined, note: string | undefined) {
-  return stage !== "KILLED" || Boolean(note?.trim());
+export function requiresStageChangeNote(input: {
+  existingStage: LeadStageValue;
+  targetStage?: LeadStageValue;
+}) {
+  return Boolean(
+    input.targetStage &&
+      input.targetStage !== input.existingStage &&
+      input.targetStage !== "NEW" &&
+      input.targetStage !== "ASSIGNED",
+  );
+}
+
+export function hasRequiredStageChangeNote(input: {
+  existingStage: LeadStageValue;
+  targetStage?: LeadStageValue;
+  note?: string;
+}) {
+  return !requiresStageChangeNote(input) || Boolean(input.note?.trim());
 }
 
 export function resolveLeadStageUpdate(input: {

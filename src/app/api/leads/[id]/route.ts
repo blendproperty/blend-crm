@@ -3,13 +3,14 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { sendAssignmentEmail } from "@/lib/email";
 import { getLeadAttribution } from "@/lib/lead-attribution";
-import { hasRequiredKillNote, leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
+import { hasRequiredStageChangeNote, leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
 import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
   stage: z.enum(leadStages).optional(),
   priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]).optional(),
   assignedToId: z.string().min(1).nullable().optional(),
+  stageNote: z.string().trim().min(2).max(500).optional(),
   killReason: z.string().trim().min(2).max(500).optional(),
 });
 
@@ -29,13 +30,6 @@ export async function PATCH(
   ) {
     return Response.json({ error: "Invalid update" }, { status: 400 });
   }
-  if (!hasRequiredKillNote(parsed.data.stage, parsed.data.killReason)) {
-    return Response.json(
-      { error: "A note is required before a lead can be killed" },
-      { status: 400 },
-    );
-  }
-
   const { id } = await context.params;
   const existing = await db.lead.findUnique({
     where: { id },
@@ -55,13 +49,24 @@ export async function PATCH(
     requestedStage: parsed.data.stage,
     assignedToId: parsed.data.assignedToId,
   });
+  const stageNote = parsed.data.stageNote ?? parsed.data.killReason;
+  if (!hasRequiredStageChangeNote({
+    existingStage: existing.stage,
+    targetStage,
+    note: stageNote,
+  })) {
+    return Response.json(
+      { error: `A note is required before changing the stage to ${leadStageLabel(targetStage ?? existing.stage)}` },
+      { status: 400 },
+    );
+  }
 
   const changes: string[] = [];
   let newAssignee: { name: string; email: string } | null = null;
   if (targetStage && targetStage !== existing.stage) {
     changes.push(`Stage changed from ${leadStageLabel(existing.stage)} to ${leadStageLabel(targetStage)}`);
-    if (targetStage === "KILLED") {
-      changes.push(`Killed note: ${parsed.data.killReason}`);
+    if (stageNote) {
+      changes.push(`${targetStage === "KILLED" ? "Killed note" : "Stage note"}: ${stageNote}`);
     }
   }
   if (parsed.data.priority && parsed.data.priority !== existing.priority) {
@@ -109,7 +114,7 @@ export async function PATCH(
             : {}),
         ...(targetStage === "KILLED"
           ? {
-              killedReason: parsed.data.killReason,
+              killedReason: stageNote,
               killedAt: now,
               killedAutomatically: false,
             }

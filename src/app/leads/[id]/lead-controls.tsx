@@ -33,6 +33,7 @@ export function LeadControls({
     stage?: string;
     priority?: string;
     assignedToId?: string | null;
+    stageNote?: string;
     killReason?: string;
   }) {
     setSaving(true);
@@ -66,14 +67,17 @@ export function LeadControls({
   }
 
   function changeStage(nextStage: string) {
-    if (nextStage !== "KILLED") {
+    if (nextStage === stage) return;
+    if (nextStage === "NEW" || nextStage === "ASSIGNED") {
       void update({ stage: nextStage });
       return;
     }
     const reason = window.prompt(
-      "Add a note explaining why this lead is being killed. It will remain recoverable in Killed Leads.",
+      nextStage === "KILLED"
+        ? "Add a note explaining why this lead is being killed. It will remain recoverable in Killed Leads."
+        : `Add a note explaining why this lead is changing to ${leadStageLabel(nextStage)}.`,
     );
-    if (reason?.trim()) void update({ stage: "KILLED", killReason: reason.trim() });
+    if (reason?.trim()) void update({ stage: nextStage, stageNote: reason.trim() });
   }
 
   async function addNote(event: FormEvent<HTMLFormElement>) {
