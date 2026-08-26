@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveLeadStageUpdate } from "../src/lib/lead-stage";
+import { hasRequiredKillNote, resolveLeadStageUpdate } from "../src/lib/lead-stage";
 
 test("moves a new lead to assigned when an agent is allocated", () => {
   assert.equal(
@@ -33,4 +33,14 @@ test("an explicitly selected stage takes precedence over assignment automation",
     }),
     "CONTACTED",
   );
+});
+
+test("manual killing requires a non-empty note", () => {
+  assert.equal(hasRequiredKillNote("KILLED", undefined), false);
+  assert.equal(hasRequiredKillNote("KILLED", "   "), false);
+  assert.equal(hasRequiredKillNote("KILLED", "Duplicate job enquiry"), true);
+});
+
+test("other stage changes do not require a kill note", () => {
+  assert.equal(hasRequiredKillNote("LOST", undefined), true);
 });

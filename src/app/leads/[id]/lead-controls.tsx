@@ -71,8 +71,7 @@ export function LeadControls({
       return;
     }
     const reason = window.prompt(
-      "Why is this lead being killed? It will remain recoverable in Killed Leads.",
-      "Not a valid property enquiry",
+      "Add a note explaining why this lead is being killed. It will remain recoverable in Killed Leads.",
     );
     if (reason?.trim()) void update({ stage: "KILLED", killReason: reason.trim() });
   }

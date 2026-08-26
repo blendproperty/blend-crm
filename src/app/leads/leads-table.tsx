@@ -112,8 +112,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   async function killLeads(ids: string[]) {
     if (ids.length === 0) return;
     const reason = window.prompt(
-      `Why ${ids.length === 1 ? "is this lead" : `are these ${ids.length} leads`} being killed? They will remain recoverable.`,
-      "Not a valid property enquiry",
+      `Add a note explaining why ${ids.length === 1 ? "this lead is" : `these ${ids.length} leads are`} being killed. They will remain recoverable.`,
     );
     if (!reason?.trim()) return;
 

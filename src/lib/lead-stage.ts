@@ -26,9 +26,13 @@ export function leadStageBadgeClass(stage: string) {
     NEGOTIATION: "border-orange-200 bg-orange-50 text-orange-700",
     WON: "border-emerald-200 bg-emerald-50 text-emerald-700",
     LOST: "border-red-200 bg-red-50 text-red-700",
-    KILLED: "border-slate-300 bg-slate-100 text-slate-700",
+    KILLED: "border-red-300 bg-red-100 text-red-800",
   };
   return classes[stage] ?? "border-slate-200 bg-slate-50 text-slate-700";
+}
+
+export function hasRequiredKillNote(stage: LeadStageValue | undefined, note: string | undefined) {
+  return stage !== "KILLED" || Boolean(note?.trim());
 }
 
 export function resolveLeadStageUpdate(input: {

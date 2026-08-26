@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { sendAssignmentEmail } from "@/lib/email";
-import { leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
+import { hasRequiredKillNote, leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
 import { getCurrentUser } from "@/lib/session";
 
 const schema = z.object({
@@ -27,6 +27,12 @@ export async function PATCH(
       parsed.data.assignedToId === undefined)
   ) {
     return Response.json({ error: "Invalid update" }, { status: 400 });
+  }
+  if (!hasRequiredKillNote(parsed.data.stage, parsed.data.killReason)) {
+    return Response.json(
+      { error: "A note is required before a lead can be killed" },
+      { status: 400 },
+    );
   }
 
   const { id } = await context.params;
@@ -54,7 +60,7 @@ export async function PATCH(
   if (targetStage && targetStage !== existing.stage) {
     changes.push(`Stage changed from ${leadStageLabel(existing.stage)} to ${leadStageLabel(targetStage)}`);
     if (targetStage === "KILLED") {
-      changes.push(`Killed reason: ${parsed.data.killReason ?? "Manually killed"}`);
+      changes.push(`Killed note: ${parsed.data.killReason}`);
     }
   }
   if (parsed.data.priority && parsed.data.priority !== existing.priority) {
@@ -102,7 +108,7 @@ export async function PATCH(
             : {}),
         ...(targetStage === "KILLED"
           ? {
-              killedReason: parsed.data.killReason ?? "Manually killed",
+              killedReason: parsed.data.killReason,
               killedAt: now,
               killedAutomatically: false,
             }

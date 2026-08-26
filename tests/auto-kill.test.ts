@@ -9,6 +9,7 @@ const jobEnquiries = [
   "Please find my CV attached",
   "Do you have any open vacancies?",
   "This is an employment enquiry",
+  "This is a job enquiry",
 ];
 
 for (const message of jobEnquiries) {
