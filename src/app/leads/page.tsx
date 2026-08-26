@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LeadsTable } from "@/app/leads/leads-table";
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
+import { getLeadAttribution } from "@/lib/lead-attribution";
 import { leadStages, leadStageLabel } from "@/lib/lead-stage";
 import { requireUser } from "@/lib/session";
 
@@ -21,7 +22,7 @@ export default async function LeadsPage({
   const [leads, killedCount] = await Promise.all([
     db.lead.findMany({
       where: {
-        ...(stage ? { stage } : {}),
+        ...(stage ? { stage } : { stage: { not: "KILLED" as const } }),
         ...(query
           ? {
               OR: [
@@ -92,7 +93,14 @@ export default async function LeadsPage({
             phone: lead.contact.phone,
           },
           property: lead.property ? { title: lead.property.title } : null,
-          website: { name: lead.website.name },
+          source: getLeadAttribution({
+            message: lead.message,
+            websiteName: lead.website.name,
+            sourcePage: lead.sourcePage,
+            utmSource: lead.utmSource,
+            utmMedium: lead.utmMedium,
+            utmCampaign: lead.utmCampaign,
+          }).primarySource,
         }))}
       />
     </CrmShell>

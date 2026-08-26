@@ -15,6 +15,11 @@ test("buildAssignmentEmail includes lead and assignee details", () => {
     propertyName: "Unit 2 (BL-002)",
     priority: "HIGH",
     message: "Please call me",
+    attribution: [
+      { label: "Original source", value: "Google Ads" },
+      { label: "Receiving website", value: "Midpoint" },
+      { label: "Landing page", value: "/vacancies/apply?utm_source=google&utm_medium=cpc" },
+    ],
     leadUrl: "https://crm.example.com/leads/lead-1",
   });
 
@@ -23,6 +28,9 @@ test("buildAssignmentEmail includes lead and assignee details", () => {
   assert.match(email.text, /Admin Name/);
   assert.match(email.text, /prospect@example.com/);
   assert.match(email.html, /https:\/\/crm\.example\.com\/leads\/lead-1/);
+  assert.match(email.text, /Original source: Google Ads/);
+  assert.match(email.html, /Receiving website/);
+  assert.match(email.html, /overflow-wrap:anywhere/);
 });
 
 test("buildAssignmentEmail escapes untrusted lead content in HTML", () => {

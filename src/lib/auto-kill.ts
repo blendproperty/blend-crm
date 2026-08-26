@@ -1,4 +1,5 @@
 const explicitJobEnquiryPatterns = [
+  /\bjob\b/i,
   /\bjob (?:application|enquiry|inquiry|opportunit(?:y|ies)|vacanc(?:y|ies))\b/i,
   /\b(?:apply|applying) (?:for|to) (?:a |any )?(?:job|position|vacancy)\b/i,
   /\b(?:looking|searching) for (?:a |any )?(?:job|work|employment)\b/i,
@@ -16,7 +17,10 @@ export function detectAutoKillReason(input: {
   const message = input.message?.trim() ?? "";
   const sourcePage = input.sourcePage?.toLowerCase() ?? "";
 
-  if (/(?:\/careers?|\/jobs?|job-application)/.test(sourcePage)) {
+  if (/(?:\/careers?|\/jobs?|\/vacancies?|job-application)/.test(sourcePage)) {
+    return "Job or career enquiry detected from source page";
+  }
+  if (/Landing page:\s*[^\s]*\/(?:careers?|jobs?|vacancies?)(?:[/?#]|$)/i.test(message)) {
     return "Job or career enquiry detected from source page";
   }
   if (explicitJobEnquiryPatterns.some((pattern) => pattern.test(message))) {

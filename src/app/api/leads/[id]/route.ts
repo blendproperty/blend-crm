@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { db } from "@/lib/db";
 import { sendAssignmentEmail } from "@/lib/email";
+import { getLeadAttribution } from "@/lib/lead-attribution";
 import { hasRequiredKillNote, leadStages, leadStageLabel, resolveLeadStageUpdate } from "@/lib/lead-stage";
 import { getCurrentUser } from "@/lib/session";
 
@@ -143,11 +144,24 @@ export async function PATCH(
           id: true,
           priority: true,
           message: true,
+          sourcePage: true,
+          utmSource: true,
+          utmMedium: true,
+          utmCampaign: true,
+          website: { select: { name: true } },
           contact: { select: { firstName: true, lastName: true, email: true, phone: true, company: true } },
           property: { select: { title: true, reference: true } },
         },
       });
       if (emailLead) {
+        const attribution = getLeadAttribution({
+          message: emailLead.message,
+          websiteName: emailLead.website.name,
+          sourcePage: emailLead.sourcePage,
+          utmSource: emailLead.utmSource,
+          utmMedium: emailLead.utmMedium,
+          utmCampaign: emailLead.utmCampaign,
+        });
         const baseUrl = process.env.CRM_PUBLIC_URL?.replace(/\/$/, "") ?? "https://crm.onpointoffices.co.za";
         const result = await sendAssignmentEmail({
           to: newAssignee.email,
@@ -159,7 +173,16 @@ export async function PATCH(
           company: emailLead.contact.company,
           propertyName: emailLead.property ? `${emailLead.property.title} (${emailLead.property.reference})` : "General enquiry",
           priority: emailLead.priority,
-          message: emailLead.message,
+          message: attribution.message,
+          attribution: [
+            { label: "Original source", value: attribution.primarySource },
+            { label: "Receiving website", value: attribution.receivingWebsite },
+            ...(attribution.utmSource ? [{ label: "UTM source", value: attribution.utmSource }] : []),
+            ...(attribution.utmMedium ? [{ label: "UTM medium", value: attribution.utmMedium }] : []),
+            ...(attribution.utmCampaign ? [{ label: "UTM campaign", value: attribution.utmCampaign }] : []),
+            ...(attribution.landingPage ? [{ label: "Landing page", value: attribution.landingPage }] : []),
+            ...(attribution.googleClickId ? [{ label: "Google Ads click ID", value: attribution.googleClickId }] : []),
+          ],
           leadUrl: `${baseUrl}/leads/${emailLead.id}`,
         });
         assignmentEmail = result.status;

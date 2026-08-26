@@ -18,7 +18,7 @@ type LeadRow = {
     phone: string | null;
   };
   property: { title: string } | null;
-  website: { name: string };
+  source: string;
 };
 
 const desktopGrid =
@@ -205,7 +205,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
               <p className="hidden text-sm text-[#52615a] md:block">
                 {lead.property?.title ?? "General enquiry"}
               </p>
-              <p className="hidden text-sm text-[#52615a] md:block">{lead.website.name}</p>
+              <p className="hidden text-sm text-[#52615a] md:block">{lead.source}</p>
               <span className={`hidden w-fit rounded-full border px-2.5 py-1 text-[11px] font-bold md:inline-block ${leadStageBadgeClass(lead.stage)}`}>
                 {leadStageLabel(lead.stage)}
               </span>

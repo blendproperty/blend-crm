@@ -5,6 +5,7 @@ import { LeadControls } from "@/app/leads/[id]/lead-controls";
 import { TaskControls } from "@/app/leads/[id]/task-controls";
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
+import { getLeadAttribution } from "@/lib/lead-attribution";
 import { requireUser } from "@/lib/session";
 
 function formatDate(date: Date) {
@@ -47,6 +48,23 @@ export default async function LeadPage({
 
   const contactName =
     `${lead.contact.firstName} ${lead.contact.lastName ?? ""}`.trim();
+  const attribution = getLeadAttribution({
+    message: lead.message,
+    websiteName: lead.website.name,
+    sourcePage: lead.sourcePage,
+    utmSource: lead.utmSource,
+    utmMedium: lead.utmMedium,
+    utmCampaign: lead.utmCampaign,
+  });
+  const attributionRows = [
+    ["Original source", attribution.primarySource],
+    ["Receiving website", attribution.receivingWebsite],
+    ["UTM source", attribution.utmSource],
+    ["UTM medium", attribution.utmMedium],
+    ["UTM campaign", attribution.utmCampaign],
+    ["Landing page", attribution.landingPage],
+    ["Google Ads click ID", attribution.googleClickId],
+  ].filter((row): row is [string, string] => Boolean(row[1]));
 
   return (
     <CrmShell
@@ -74,7 +92,20 @@ export default async function LeadPage({
                   </p>
                 </div>
               )}
-              <div className="sm:col-span-2"><p className="text-xs font-bold uppercase text-[#87938e]">Original message</p><p className="mt-2 whitespace-pre-wrap leading-6 text-[#52615a]">{lead.message ?? "No message supplied."}</p></div>
+              <div className="sm:col-span-2"><p className="text-xs font-bold uppercase text-[#87938e]">Original message</p><p className="mt-2 whitespace-pre-wrap leading-6 text-[#52615a]">{attribution.message ?? "No message supplied."}</p></div>
+              {attributionRows.length > 0 && (
+                <div className="sm:col-span-2 rounded-lg border border-[#dce8e3] bg-[#f8faf9] p-4">
+                  <p className="text-xs font-bold uppercase text-[#168f69]">Lead attribution</p>
+                  <dl className="mt-3 space-y-3">
+                    {attributionRows.map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="text-[11px] font-bold uppercase tracking-wide text-[#87938e]">{label}</dt>
+                        <dd className="mt-0.5 break-all text-sm text-[#31453d]">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
             </div>
           </section>
 

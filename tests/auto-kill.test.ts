@@ -10,6 +10,7 @@ const jobEnquiries = [
   "Do you have any open vacancies?",
   "This is an employment enquiry",
   "This is a job enquiry",
+  "job",
 ];
 
 for (const message of jobEnquiries) {
@@ -25,6 +26,20 @@ test("auto-kills enquiries submitted from a careers page", () => {
   assert.equal(
     detectAutoKillReason({ sourcePage: "/careers/apply" }),
       "Job or career enquiry detected from source page",
+  );
+});
+
+test("auto-kills enquiries submitted from a vacancies page", () => {
+  assert.equal(
+    detectAutoKillReason({ sourcePage: "https://www.mid-point.co.za/vacancies/warehouse" }),
+    "Job or career enquiry detected from source page",
+  );
+});
+
+test("auto-kills legacy enquiries whose landing page is embedded in the message", () => {
+  assert.equal(
+    detectAutoKillReason({ message: "Warehouse enquiry\n\nLanding page: /vacancies/apply?utm_source=google" }),
+    "Job or career enquiry detected from source page",
   );
 });
 
