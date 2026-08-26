@@ -8,6 +8,7 @@ import { leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
 
 type LeadRow = {
   id: string;
+  createdAt: string;
   stage: string;
   priority: string;
   contact: {
@@ -19,6 +20,27 @@ type LeadRow = {
   property: { title: string } | null;
   website: { name: string };
 };
+
+const desktopGrid =
+  "md:grid-cols-[32px_minmax(220px,1.5fr)_minmax(170px,1fr)_minmax(140px,0.9fr)_120px_110px_145px_160px]";
+
+function formatLeadDate(value: string) {
+  const date = new Date(value);
+  return {
+    date: new Intl.DateTimeFormat("en-ZA", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      timeZone: "Africa/Johannesburg",
+    }).format(date),
+    time: new Intl.DateTimeFormat("en-ZA", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Africa/Johannesburg",
+    }).format(date),
+  };
+}
 
 export function LeadsTable({ leads }: { leads: LeadRow[] }) {
   const router = useRouter();
@@ -147,20 +169,23 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
         </div>
       </div>
 
-      <div className="hidden grid-cols-[auto_1.4fr_1fr_1fr_0.8fr_0.7fr_auto] gap-4 border-b border-[#edf0ef] bg-[#f8faf9] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#78857f] md:grid">
-        <span />
-        <span>Contact</span>
-        <span>Property</span>
-        <span>Source</span>
-        <span>Stage</span>
-        <span>Priority</span>
-        <span />
-      </div>
-      <div className="divide-y divide-[#edf0ef]">
+      <div className="overflow-x-auto">
+        <div className="md:min-w-[1220px]">
+          <div className={`hidden gap-4 border-b border-[#edf0ef] bg-[#f8faf9] px-6 py-3 text-[11px] font-bold uppercase tracking-[0.12em] text-[#78857f] md:grid ${desktopGrid}`}>
+            <span />
+            <span>Contact</span>
+            <span>Property</span>
+            <span>Source</span>
+            <span>Stage</span>
+            <span>Priority</span>
+            <span>Date received</span>
+            <span />
+          </div>
+          <div className="divide-y divide-[#edf0ef]">
         {leads.map((lead) => (
           <div
             key={lead.id}
-            className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-6 py-4 transition hover:bg-[#f8faf9] md:grid-cols-[auto_1.4fr_1fr_1fr_0.8fr_0.7fr_auto] md:gap-4"
+            className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 px-6 py-4 transition hover:bg-[#f8faf9] md:gap-4 ${desktopGrid}`}
           >
             <input
               type="checkbox"
@@ -188,8 +213,12 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
               <span className="hidden text-xs font-bold text-[#66746e] md:block">
                 {leadStageLabel(lead.priority)}
               </span>
+              <span className="hidden text-xs text-[#52615a] md:block">
+                <span className="block font-semibold">{formatLeadDate(lead.createdAt).date}</span>
+                <span className="mt-0.5 block text-[11px] text-[#87938e]">{formatLeadDate(lead.createdAt).time}</span>
+              </span>
             </Link>
-            <div className="flex justify-self-end gap-2">
+            <div className="flex w-40 justify-end gap-2 justify-self-end">
               {lead.stage !== "KILLED" && (
                 <button type="button" onClick={() => void killLeads([lead.id])} disabled={deleting || killing} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Kill</button>
               )}
@@ -205,6 +234,8 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
             </p>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </section>
   );

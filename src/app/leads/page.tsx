@@ -82,6 +82,7 @@ export default async function LeadsPage({
       <LeadsTable
         leads={leads.map((lead) => ({
           id: lead.id,
+          createdAt: lead.createdAt.toISOString(),
           stage: lead.stage,
           priority: lead.priority,
           contact: {
