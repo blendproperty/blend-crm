@@ -46,6 +46,25 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
+async function sendConfiguredEmail(input: { to: string; subject: string; text: string; html: string }) {
+  const config = requiredEmailConfig();
+  if (!config) return { status: "not_configured" as const };
+  const transport = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    requireTLS: !config.secure,
+    auth: { user: config.user, pass: config.password },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+    disableFileAccess: true,
+    disableUrlAccess: true,
+  });
+  const result = await transport.sendMail({ from: config.from, ...input });
+  return { status: "sent" as const, messageId: result.messageId };
+}
+
 export function buildAssignmentEmail(input: AssignmentEmail) {
   const contactDetails = [input.contactEmail, input.contactPhone].filter(Boolean).join(" · ") || "No contact details supplied";
   const subject = `New CRM lead assigned: ${input.contactName}`;
@@ -73,29 +92,33 @@ export function buildAssignmentEmail(input: AssignmentEmail) {
 }
 
 export async function sendAssignmentEmail(input: AssignmentEmail) {
-  const config = requiredEmailConfig();
-  if (!config) return { status: "not_configured" as const };
-
-  const transport = nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    requireTLS: !config.secure,
-    auth: { user: config.user, pass: config.password },
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
-    disableFileAccess: true,
-    disableUrlAccess: true,
-  });
   const content = buildAssignmentEmail(input);
-  const result = await transport.sendMail({
-    from: config.from,
-    to: input.to,
-    subject: content.subject,
-    text: content.text,
-    html: content.html,
-  });
+  return sendConfiguredEmail({ to: input.to, ...content });
+}
 
-  return { status: "sent" as const, messageId: result.messageId };
+export function buildSlaReminderEmail(input: { assigneeName: string; contactName: string; leadUrl: string }) {
+  const subject = `Reminder: CRM lead awaiting first response — ${input.contactName}`;
+  const text = `Hi ${input.assigneeName},\n\nA quick reminder that the lead for ${input.contactName} has been assigned to you and is still awaiting its first recorded response. Please update the stage or add a note once attended.\n\nOpen lead: ${input.leadUrl}`;
+  const html = `<p>Hi ${escapeHtml(input.assigneeName)},</p><p>A quick reminder that the lead for <strong>${escapeHtml(input.contactName)}</strong> has been assigned to you and is still awaiting its first recorded response.</p><p>Please update the stage or add a note once attended.</p><p><a href="${escapeHtml(input.leadUrl)}">Open lead in CRM</a></p>`;
+  return { subject, text, html };
+}
+
+export async function sendSlaReminderEmail(input: { to: string; assigneeName: string; contactName: string; leadUrl: string }) {
+  const { to, ...contentInput } = input;
+  return sendConfiguredEmail({ to, ...buildSlaReminderEmail(contentInput) });
+}
+
+export function buildSlaEscalationEmail(input: { recipientName: string; leads: Array<{ contactName: string; assigneeName: string; ageHours: number; leadUrl: string }> }) {
+  const subject = `${input.leads.length} CRM lead${input.leads.length === 1 ? "" : "s"} may need assistance`;
+  const intro = `The following lead${input.leads.length === 1 ? " has" : "s have"} not yet had a first response recorded after 24 hours. This is an operational visibility notice so support can be arranged where needed; ownership has not been changed.`;
+  const textRows = input.leads.map((lead) => `- ${lead.contactName} — assigned to ${lead.assigneeName} — ${lead.ageHours} hours — ${lead.leadUrl}`);
+  const text = [`Hi ${input.recipientName},`, "", intro, "", ...textRows].join("\n");
+  const htmlRows = input.leads.map((lead) => `<li style="margin-bottom:10px"><a href="${escapeHtml(lead.leadUrl)}"><strong>${escapeHtml(lead.contactName)}</strong></a> — assigned to ${escapeHtml(lead.assigneeName)} — ${lead.ageHours} hours</li>`).join("");
+  const html = `<p>Hi ${escapeHtml(input.recipientName)},</p><p>${escapeHtml(intro)}</p><ul>${htmlRows}</ul>`;
+  return { subject, text, html };
+}
+
+export async function sendSlaEscalationEmail(input: { to: string; recipientName: string; leads: Array<{ contactName: string; assigneeName: string; ageHours: number; leadUrl: string }> }) {
+  const { to, ...contentInput } = input;
+  return sendConfiguredEmail({ to, ...buildSlaEscalationEmail(contentInput) });
 }

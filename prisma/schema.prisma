@@ -111,6 +111,8 @@ model Lead {
   utmMedium        String?
   utmCampaign      String?
   firstRespondedAt DateTime?
+  slaReminderSentAt DateTime?
+  slaEscalatedAt    DateTime?
   closedAt         DateTime?
   lostReason       String?
   killedReason     String?

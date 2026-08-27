@@ -56,6 +56,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      LEAD_DEFAULT_ASSIGNEE_EMAIL: ${LEAD_DEFAULT_ASSIGNEE_EMAIL:-boitumelo@blendproperty.co.za}
+      LEAD_SLA_ESCALATION_EMAIL: ${LEAD_SLA_ESCALATION_EMAIL:-luke@blendproperty.co.za}
+      SLA_AUTOMATION_SECRET: ${SLA_AUTOMATION_SECRET:-${AUTH_SECRET}}
     depends_on:
       db:
         condition: service_healthy
@@ -84,6 +87,29 @@ services:
     networks:
       - default
       - traefik
+
+  sla:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: blend-crm-web:latest
+    container_name: blend-crm-sla
+    restart: unless-stopped
+    environment:
+      SLA_AUTOMATION_SECRET: ${SLA_AUTOMATION_SECRET:-${AUTH_SECRET}}
+    command:
+      - sh
+      - -c
+      - >-
+        while true; do
+          node -e "fetch('http://web:3000/api/internal/sla',{method:'POST',headers:{authorization:'Bearer '+process.env.SLA_AUTOMATION_SECRET}}).then(async r=>{if(!r.ok){console.error(r.status,await r.text());process.exitCode=1}}).catch(e=>{console.error(e);process.exitCode=1})";
+          sleep 300;
+        done
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - default
 
 networks:
   traefik:

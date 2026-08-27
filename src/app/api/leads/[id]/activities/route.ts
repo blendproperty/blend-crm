@@ -23,13 +23,20 @@ export async function POST(
   const lead = await db.lead.findUnique({ where: { id }, select: { id: true } });
   if (!lead) return Response.json({ error: "Lead not found" }, { status: 404 });
 
-  const activity = await db.activity.create({
-    data: {
-      type: "NOTE",
-      content: parsed.data.content,
-      leadId: id,
-      userId: user.id,
-    },
+  const activity = await db.$transaction(async (transaction) => {
+    const saved = await transaction.activity.create({
+      data: {
+        type: "NOTE",
+        content: parsed.data.content,
+        leadId: id,
+        userId: user.id,
+      },
+    });
+    await transaction.lead.updateMany({
+      where: { id, firstRespondedAt: null },
+      data: { firstRespondedAt: saved.createdAt },
+    });
+    return saved;
   });
 
   return Response.json({ id: activity.id }, { status: 201 });
