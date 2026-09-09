@@ -19,7 +19,7 @@ export default async function LeadsPage({
     ? (filters.stage as (typeof leadStages)[number])
     : undefined;
 
-  const [leads, killedCount] = await Promise.all([
+  const [leads, killedCount, users] = await Promise.all([
     db.lead.findMany({
       where: {
         ...(stage ? { stage } : { stage: { not: "KILLED" as const } }),
@@ -41,6 +41,11 @@ export default async function LeadsPage({
       take: 100,
     }),
     db.lead.count({ where: { stage: "KILLED" } }),
+    db.user.findMany({
+      where: { active: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return (
@@ -81,6 +86,7 @@ export default async function LeadsPage({
       </form>
 
       <LeadsTable
+        users={users}
         leads={leads.map((lead) => ({
           id: lead.id,
           createdAt: lead.createdAt.toISOString(),

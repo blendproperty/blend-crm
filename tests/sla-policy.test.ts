@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildSlaEscalationEmail, buildSlaReminderEmail } from "../src/lib/email";
+import { buildCallbackReminderEmail, buildSlaEscalationEmail, buildSlaReminderEmail } from "../src/lib/email";
 import { leadAgeHours, slaCutoffs } from "../src/lib/sla-policy";
 
 test("SLA cutoffs are 30 minutes and 24 hours", () => {
@@ -26,4 +26,16 @@ test("escalation wording requests assistance without reassigning or blaming", ()
   assert.match(email.text, /operational visibility/i);
   assert.match(email.text, /ownership has not been changed/i);
   assert.doesNotMatch(email.text, /failed|ignored|negligent/i);
+});
+
+test("call-back reminder includes the contact number and CRM link", () => {
+  const email = buildCallbackReminderEmail({
+    assigneeName: "Brad",
+    contactName: "Prospect",
+    contactPhone: "0712345678",
+    taskTitle: "Call about Bedfordview office",
+    leadUrl: "https://crm.example/leads/1",
+  });
+  assert.match(email.text, /0712345678/);
+  assert.match(email.text, /https:\/\/crm\.example\/leads\/1/);
 });

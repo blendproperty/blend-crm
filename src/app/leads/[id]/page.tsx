@@ -147,6 +147,7 @@ export default async function LeadPage({
                 users={users}
                 tasks={lead.tasks.map((task) => ({
                   id: task.id,
+                  type: task.type,
                   title: task.title,
                   status: task.status,
                   dueAt: task.dueAt?.toISOString() ?? null,

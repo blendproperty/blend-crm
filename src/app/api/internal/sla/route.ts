@@ -1,7 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 
 import { db } from "@/lib/db";
-import { sendSlaEscalationEmail, sendSlaReminderEmail } from "@/lib/email";
+import { sendCallbackReminderEmail, sendSlaEscalationEmail, sendSlaReminderEmail } from "@/lib/email";
 import { leadAgeHours, slaCutoffs } from "@/lib/sla-policy";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     stage: { in: ["NEW" as const, "ASSIGNED" as const] },
   };
 
-  const [reminders, overdue] = await Promise.all([
+  const [reminders, overdue, callbacks] = await Promise.all([
     db.lead.findMany({
       where: {
         ...activeWhere,
@@ -47,6 +47,18 @@ export async function POST(request: Request) {
       },
       include: { contact: true, assignedTo: true },
       orderBy: { createdAt: "asc" },
+      take: 100,
+    }),
+    db.task.findMany({
+      where: {
+        type: "CALLBACK",
+        status: "OPEN",
+        dueAt: { lte: now },
+        reminderSentAt: null,
+        assignee: { isNot: null },
+      },
+      include: { assignee: true, lead: { include: { contact: true } } },
+      orderBy: { dueAt: "asc" },
       take: 100,
     }),
   ]);
@@ -102,5 +114,35 @@ export async function POST(request: Request) {
     }
   }
 
-  return Response.json({ remindersSent, escalationsSent });
+  let callbackRemindersSent = 0;
+  for (const task of callbacks) {
+    if (!task.assignee) continue;
+    const contactName = `${task.lead.contact.firstName} ${task.lead.contact.lastName ?? ""}`.trim();
+    try {
+      const result = await sendCallbackReminderEmail({
+        to: task.assignee.email,
+        assigneeName: task.assignee.name,
+        contactName,
+        contactPhone: task.lead.contact.phone,
+        taskTitle: task.title,
+        leadUrl: `${baseUrl}/leads/${task.leadId}`,
+      });
+      if (result.status !== "sent") continue;
+      await db.$transaction([
+        db.task.update({ where: { id: task.id }, data: { reminderSentAt: now } }),
+        db.activity.create({
+          data: {
+            type: "EMAIL",
+            content: `Call-back reminder sent to ${task.assignee.name}: ${task.title}`,
+            leadId: task.leadId,
+          },
+        }),
+      ]);
+      callbackRemindersSent += 1;
+    } catch (error) {
+      console.error(`Call-back reminder failed for task ${task.id}`, error);
+    }
+  }
+
+  return Response.json({ remindersSent, escalationsSent, callbackRemindersSent });
 }

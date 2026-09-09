@@ -42,11 +42,13 @@ function formatLeadDate(value: string) {
   };
 }
 
-export function LeadsTable({ leads }: { leads: LeadRow[] }) {
+export function LeadsTable({ leads, users }: { leads: LeadRow[]; users: Array<{ id: string; name: string }> }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [killing, setKilling] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [bulkAssigneeId, setBulkAssigneeId] = useState("");
   const [error, setError] = useState("");
 
   function toggle(id: string) {
@@ -134,6 +136,35 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
     router.refresh();
   }
 
+  async function assignSelected() {
+    if (!bulkAssigneeId || selected.size === 0) return;
+    const assignee = users.find((user) => user.id === bulkAssigneeId);
+    if (!assignee) return;
+    const confirmed = window.confirm(
+      `Assign ${selected.size} lead${selected.size === 1 ? "" : "s"} to ${assignee.name}? Each assignment will send the lead's contact details to them.`,
+    );
+    if (!confirmed) return;
+
+    setAssigning(true);
+    setError("");
+    const results = await Promise.all(
+      Array.from(selected).map(async (id) => {
+        const response = await fetch(`/api/leads/${id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ assignedToId: bulkAssigneeId }),
+        });
+        return response.ok;
+      }),
+    );
+    const failed = results.filter((ok) => !ok).length;
+    if (failed) setError(`Unable to assign ${failed} lead${failed === 1 ? "" : "s"}.`);
+    setSelected(new Set());
+    setBulkAssigneeId("");
+    setAssigning(false);
+    router.refresh();
+  }
+
   return (
     <section className="mt-5 overflow-hidden rounded-xl border border-[#e2e8e5] bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#edf0ef] bg-[#f8faf9] px-6 py-3">
@@ -142,17 +173,35 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
             type="checkbox"
             checked={leads.length > 0 && selected.size === leads.length}
             onChange={toggleAll}
-            disabled={leads.length === 0 || deleting || killing}
+            disabled={leads.length === 0 || deleting || killing || assigning}
             className="h-4 w-4 rounded border-[#c9d4cf]"
           />
           Select all
         </label>
         <div className="flex items-center gap-3">
           {error && <p className="text-xs font-semibold text-red-700">{error}</p>}
+          <select
+            value={bulkAssigneeId}
+            onChange={(event) => setBulkAssigneeId(event.target.value)}
+            disabled={selected.size === 0 || assigning || deleting || killing}
+            aria-label="Assign selected leads to"
+            className="h-9 rounded-lg border border-[#c9d4cf] bg-white px-3 text-xs font-semibold text-[#31453d] disabled:opacity-40"
+          >
+            <option value="">Assign selected to…</option>
+            {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={() => void assignSelected()}
+            disabled={!bulkAssigneeId || selected.size === 0 || assigning || deleting || killing}
+            className="rounded-lg bg-[#159a70] px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {assigning ? "Assigning..." : `Assign${selected.size ? ` (${selected.size})` : ""}`}
+          </button>
           <button
             type="button"
             onClick={() => void killLeads(Array.from(selected))}
-            disabled={selected.size === 0 || deleting || killing}
+            disabled={selected.size === 0 || deleting || killing || assigning}
             className="rounded-lg bg-slate-700 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {killing ? "Killing..." : `Kill selected${selected.size ? ` (${selected.size})` : ""}`}
@@ -160,7 +209,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
           <button
             type="button"
             onClick={deleteSelected}
-            disabled={selected.size === 0 || deleting || killing}
+            disabled={selected.size === 0 || deleting || killing || assigning}
             className="rounded-lg bg-red-600 px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {deleting ? "Deleting..." : `Delete selected${selected.size ? ` (${selected.size})` : ""}`}
@@ -190,7 +239,7 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
               type="checkbox"
               checked={selected.has(lead.id)}
               onChange={() => toggle(lead.id)}
-              disabled={deleting || killing}
+              disabled={deleting || killing || assigning}
               className="h-4 w-4 rounded border-[#c9d4cf]"
             />
             <Link href={`/leads/${lead.id}`} className="contents">
@@ -219,9 +268,9 @@ export function LeadsTable({ leads }: { leads: LeadRow[] }) {
             </Link>
             <div className="flex w-40 justify-end gap-2 justify-self-end">
               {lead.stage !== "KILLED" && (
-                <button type="button" onClick={() => void killLeads([lead.id])} disabled={deleting || killing} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Kill</button>
+                <button type="button" onClick={() => void killLeads([lead.id])} disabled={deleting || killing || assigning} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40">Kill</button>
               )}
-              <button type="button" onClick={() => deleteOne(lead.id)} disabled={deleting || killing} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-40">Delete</button>
+              <button type="button" onClick={() => deleteOne(lead.id)} disabled={deleting || killing || assigning} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-40">Delete</button>
             </div>
           </div>
         ))}

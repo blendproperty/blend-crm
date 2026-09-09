@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { detectAutoKillReason } from "@/lib/auto-kill";
 import { sendAssignmentEmail } from "@/lib/email";
 import { getLeadAttribution } from "@/lib/lead-attribution";
+import { leadAssigneeEmail } from "@/lib/lead-routing";
 import {
   type LeadIntake,
   normalizeEmail,
@@ -14,6 +15,7 @@ export async function createLeadFromIntake(input: LeadIntake) {
   const normalizedEmail = normalizeEmail(input.contact.email);
   const normalizedPhone = normalizePhone(input.contact.phone);
   const autoKillReason = detectAutoKillReason(input);
+  const targetAssigneeEmail = leadAssigneeEmail(input, autoKillReason);
 
   const result = await db.$transaction(async (transaction) => {
     const website = await transaction.website.upsert({
@@ -93,11 +95,11 @@ export async function createLeadFromIntake(input: LeadIntake) {
         })
       : null;
 
-    const assignee = autoKillReason
+    const assignee = !targetAssigneeEmail
       ? null
       : await transaction.user.findFirst({
           where: {
-            email: (process.env.LEAD_DEFAULT_ASSIGNEE_EMAIL ?? "boitumelo@blendproperty.co.za").toLowerCase(),
+            email: targetAssigneeEmail,
             active: true,
           },
           select: { id: true, name: true, email: true },

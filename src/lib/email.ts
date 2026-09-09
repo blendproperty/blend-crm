@@ -122,3 +122,37 @@ export async function sendSlaEscalationEmail(input: { to: string; recipientName:
   const { to, ...contentInput } = input;
   return sendConfiguredEmail({ to, ...buildSlaEscalationEmail(contentInput) });
 }
+
+export function buildCallbackReminderEmail(input: {
+  assigneeName: string;
+  contactName: string;
+  contactPhone: string | null;
+  taskTitle: string;
+  leadUrl: string;
+}) {
+  const subject = `Call-back reminder: ${input.contactName}`;
+  const phone = input.contactPhone ?? "No phone number supplied";
+  const text = [
+    `Hi ${input.assigneeName},`,
+    "",
+    `Your scheduled call-back follow-up is now due: ${input.taskTitle}`,
+    `Contact: ${input.contactName}`,
+    `Phone: ${phone}`,
+    "",
+    `Open lead: ${input.leadUrl}`,
+  ].join("\n");
+  const html = `<p>Hi ${escapeHtml(input.assigneeName)},</p><p>Your scheduled call-back follow-up is now due:</p><p><strong>${escapeHtml(input.taskTitle)}</strong></p><p>Contact: <strong>${escapeHtml(input.contactName)}</strong><br>Phone: <strong>${escapeHtml(phone)}</strong></p><p><a href="${escapeHtml(input.leadUrl)}">Open lead in CRM</a></p>`;
+  return { subject, text, html };
+}
+
+export async function sendCallbackReminderEmail(input: {
+  to: string;
+  assigneeName: string;
+  contactName: string;
+  contactPhone: string | null;
+  taskTitle: string;
+  leadUrl: string;
+}) {
+  const { to, ...contentInput } = input;
+  return sendConfiguredEmail({ to, ...buildCallbackReminderEmail(contentInput) });
+}

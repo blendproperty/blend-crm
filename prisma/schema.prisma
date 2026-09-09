@@ -48,6 +48,11 @@ enum TaskStatus {
   CANCELLED
 }
 
+enum TaskType {
+  GENERAL
+  CALLBACK
+}
+
 model User {
   id            String     @id @default(cuid())
   name          String
@@ -152,10 +157,12 @@ model Activity {
 
 model Task {
   id          String     @id @default(cuid())
+  type        TaskType   @default(GENERAL)
   title       String
   description String?
   dueAt       DateTime?
   status      TaskStatus @default(OPEN)
+  reminderSentAt DateTime?
   leadId      String
   lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
   assigneeId  String?
@@ -165,4 +172,5 @@ model Task {
 
   @@index([assigneeId, status, dueAt])
   @@index([leadId])
+  @@index([type, status, dueAt, reminderSentAt])
 }

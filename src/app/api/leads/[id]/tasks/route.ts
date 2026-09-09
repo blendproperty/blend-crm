@@ -1,14 +1,6 @@
-import { z } from "zod";
-
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
-
-const schema = z.object({
-  title: z.string().trim().min(2).max(240),
-  description: z.string().trim().max(2000).optional(),
-  dueAt: z.string().datetime().optional(),
-  assigneeId: z.string().min(1).optional(),
-});
+import { taskInputSchema } from "@/lib/task-input";
 
 export async function POST(
   request: Request,
@@ -17,7 +9,7 @@ export async function POST(
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const parsed = schema.safeParse(await request.json().catch(() => null));
+  const parsed = taskInputSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return Response.json(
       { error: parsed.error.issues[0]?.message ?? "Invalid task" },
@@ -41,6 +33,7 @@ export async function POST(
   const task = await db.$transaction(async (transaction) => {
     const created = await transaction.task.create({
       data: {
+        type: parsed.data.type,
         title: parsed.data.title,
         description: parsed.data.description || undefined,
         dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : undefined,
@@ -51,7 +44,7 @@ export async function POST(
     await transaction.activity.create({
       data: {
         type: "NOTE",
-        content: `Task created: ${created.title}`,
+        content: `${created.type === "CALLBACK" ? "Call-back follow-up" : "Task"} created: ${created.title}${created.dueAt ? ` for ${created.dueAt.toISOString()}` : ""}`,
         leadId: id,
         userId: user.id,
       },
