@@ -11,7 +11,8 @@
     "test": "tsx --test tests/*.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "test:security": "node --test tests/braces-security.test.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
@@ -38,11 +39,13 @@
     "prisma": "^7.9.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "braces": "file:vendor/braces"
   },
   "overrides": {
     "prisma": {
       "mysql2": "3.24.5"
-    }
+    },
+    "braces": "$braces"
   }
 }

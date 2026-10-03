@@ -1,6 +1,7 @@
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY vendor/braces ./vendor/braces
 RUN npm ci
 
 FROM node:24-alpine AS builder
@@ -13,6 +14,7 @@ RUN npm run db:generate && npm run build
 FROM node:24-alpine AS migrator
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY vendor/braces ./vendor/braces
 RUN npm ci
 COPY prisma ./prisma
 COPY prisma.config.ts ./
