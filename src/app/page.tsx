@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import { reportableLeadWhere } from "@/lib/reporting";
 import { leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
 import { requireUser } from "@/lib/session";
 
@@ -48,29 +49,32 @@ async function getDashboardData() {
     sourceGroups,
     stageGroups,
   ] = await Promise.all([
-    db.lead.count(),
-    db.lead.count({ where: { stage: "NEW" } }),
+    db.lead.count({ where: reportableLeadWhere }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "NEW" } }),
     db.lead.count({
       where: {
+        ...reportableLeadWhere,
         stage: "NEW",
         firstRespondedAt: null,
         createdAt: { lt: responseTarget },
       },
     }),
-    db.lead.count({ where: { stage: "VIEWING" } }),
-    db.lead.count({ where: { stage: "WON", closedAt: { gte: thirtyDaysAgo } } }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "VIEWING" } }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "WON", closedAt: { gte: thirtyDaysAgo } } }),
     db.lead.findMany({
+      where: reportableLeadWhere,
       take: 6,
       orderBy: { createdAt: "desc" },
       include: { contact: true, website: true, property: true },
     }),
     db.lead.groupBy({
       by: ["websiteId"],
-      where: { createdAt: { gte: thirtyDaysAgo } },
+      where: { ...reportableLeadWhere, createdAt: { gte: thirtyDaysAgo } },
       _count: { _all: true },
     }),
     db.lead.groupBy({
       by: ["stage"],
+      where: reportableLeadWhere,
       _count: { _all: true },
     }),
   ]);

@@ -1,17 +1,18 @@
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
+import { reportableLeadWhere } from "@/lib/reporting";
 import { leadStageBadgeClass, leadStageLabel } from "@/lib/lead-stage";
 import { requireUser } from "@/lib/session";
 
 export default async function ReportsPage() {
   await requireUser();
   const [total, won, lost, killed, sources, stages] = await Promise.all([
-    db.lead.count(),
-    db.lead.count({ where: { stage: "WON" } }),
-    db.lead.count({ where: { stage: "LOST" } }),
-    db.lead.count({ where: { stage: "KILLED" } }),
-    db.website.findMany({ include: { _count: { select: { leads: true } } } }),
-    db.lead.groupBy({ by: ["stage"], _count: { _all: true } }),
+    db.lead.count({ where: reportableLeadWhere }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "WON" } }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "LOST" } }),
+    db.lead.count({ where: { ...reportableLeadWhere, stage: "KILLED" } }),
+    db.website.findMany({ include: { _count: { select: { leads: { where: reportableLeadWhere } } } } }),
+    db.lead.groupBy({ by: ["stage"], where: reportableLeadWhere, _count: { _all: true } }),
   ]);
 
   return (

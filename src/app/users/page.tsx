@@ -2,12 +2,13 @@ import { NewUserForm } from "@/app/users/new-user-form";
 import { UserManagement } from "@/app/users/user-management";
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
+import { reportableLeadWhere } from "@/lib/reporting";
 import { requireAdmin } from "@/lib/session";
 
 export default async function UsersPage() {
   const currentUser = await requireAdmin();
   const users = await db.user.findMany({
-    include: { _count: { select: { assignedLeads: true, tasks: true } } },
+    include: { _count: { select: { assignedLeads: { where: reportableLeadWhere }, tasks: true } } },
     orderBy: [{ active: "desc" }, { name: "asc" }],
   });
 

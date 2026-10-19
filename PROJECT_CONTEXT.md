@@ -1,6 +1,16 @@
 # Blend CRM Project Context
 
-Last updated: 2026-09-09 (Africa/Johannesburg)
+Last updated: 2026-10-19 (Africa/Johannesburg)
+
+## 2026-10-19 - Close Midpoint QA lead and exclude labelled tests from commercial summaries
+
+- Implementation/operations: at Brett Dovey's explicit request, closed the single exact Midpoint CLARITY-QA-20261019 record as KILLED with TEST ONLY reason, closed/killed timestamps and an audit activity; no deletion or contact change. Exact source/external-ID/test-label guards and a transaction restricted the operation to that record. Verified closed=true, zero open tasks and no active SLA eligibility. Added one shared null-safe reporting filter excluding TEST ONLY killed reasons from overview totals/conversion denominator/recent/source/stage summaries, Reports aggregates and source counts, and property/team lead counts. Killed-lead audit access retains the record. Existing genuine killed leads and null reasons remain reportable. No schema, routing, permissions, email or provider change.
+- Testing: 36 existing tests passed; lint, typecheck and production build passed. Read-only tests/reporting-null-guard.sql passed against PostgreSQL fixture values, including null and genuine-killed reasons. Fresh source totals: 68 raw, 67 reportable, exactly one labelled test excluded, all 33 null reasons retained. These are dated verification counts, not static baselines.
+- Commit/push: pending on codex/clarity-test-closure-20261019 against verified blendproperty/blend-crm main ce04b6d. Canonical context included in the change; production checkout was clean and unrelated changes preserved.
+- Merge: pending normal non-force promotion; no PR merge claimed.
+- Deployment/configuration: QA record closure is live; reporting code awaits CI/deployment. No new configuration or migration.
+- Live production verification: exact closed test row and its SLA/task state read back independently. SQL fixture/filter totals passed; deployed reporting query/UI verification remains pending. Raw audit history deliberately retains the test; GA4's historical submitted event is not retroactively erased by closing a CRM record.
+- Outstanding gates: recipient inbox/device receipt remains unverified. Test is excluded from genuine/qualified demand by classification; current reporting code must deploy before headline/source totals change. Midpoint mobile/form fixes and their separate canonical context are tracked in blendproperty/midpoint. Existing provider, data, training, approval and operational UAT gates remain open.
 
 ## Canonical system
 

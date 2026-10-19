@@ -1,11 +1,12 @@
 import { CrmShell } from "@/components/crm-shell";
 import { db } from "@/lib/db";
+import { reportableLeadWhere } from "@/lib/reporting";
 import { requireUser } from "@/lib/session";
 
 export default async function PropertiesPage() {
   await requireUser();
   const properties = await db.property.findMany({
-    include: { _count: { select: { leads: true } } },
+    include: { _count: { select: { leads: { where: reportableLeadWhere } } } },
     orderBy: { updatedAt: "desc" },
   });
 
