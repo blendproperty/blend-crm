@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24.22.1
           cache: npm
 
       - name: Install dependencies
@@ -35,6 +35,11 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Build and verify patched production image
+        run: |
+          docker build -t node-patch:ci .
+          test "$(docker run --rm --entrypoint node node-patch:ci --version)" = "v24.22.1"
 
   deploy:
     needs: build
