@@ -1,3 +1,13 @@
+## 2026-10-28 - Verified Node 24.22.1 rollout (blend-crm)
+
+- Implementation: supported patched Node 24.22.1 pinned by official Docker OCI digest; no business feature, schema, secret, credential, permission or network change. Existing validation retained and actual production image version asserted.
+- Testing: source PR 6 at 961fd48367fe9e3f874d72141ec3ff5006be41b8 passed applicable regression, type/lint, production build and actual Docker image qualification. Prior failures and corrective evidence remain in the record. These are technical checks, not customer/business acceptance.
+- Commit/push: scoped source and canonical context were published with remote context readback. Merge: normally checked PR 6 merged as 041539bed8036c8101277a397e64962c60523384. This evidence-only follow-up preserves all prior context and uses the established documentation-only [skip ci] path; it triggers no application release.
+- Deployment/configuration: Normal CI/deploy run 40516207631 completed successfully; both web and SLA containers report v24.22.1. Public health and login returned 200. Exact production checkout 041539bed8036c8101277a397e64962c60523384 was read back. Rollback image retained; applicable database backup readable, full restore not newly tested. Shared-host maintenance by a separate owner is not attributed to this application update.
+- Live production verification: 2026-10-27T13:59:57.434802+00:00; actual running Node v24.22.1, image sha256:1e7d95a7eff8f67451f933a467ba9046d12c205cb9c5a72e3135ebf77aecb849. Evidence retained under the rollout workspace. Runtime and public HTTP checks are separate from CI runner versions. No real customer transaction, outbound test message or financial execution performed.
+- Remaining gates: all prior staff/customer/device/UAT, property/source-data accuracy, provider delivery, signing/payment/settlement, legal/privacy, finance, training, physical-access, offline and full-recovery/approval gates remain open. No organisation migration or paused REA work. No external tracker in scope.
+
+
 ## 2026-10-27 - Node.js 24.22.1 runtime patch candidate
 
 - **Implementation:** pin the actual application Docker stages to official Node 24.22.1 Alpine OCI digest; qualify the built runtime in CI. Retain the existing supported production major. Existing tests and production build remain required. No business features, dependencies, schemas, secrets, provider, permission or network settings change.
